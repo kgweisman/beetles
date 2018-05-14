@@ -1,0 +1,71 @@
+---
+title: "Beetles demographics"
+output:
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+
+This is a notebook with demographics for each sample.
+
+```{r global_options, include = F}
+knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F)
+```
+
+```{r libraries, include = F}
+library(tidyverse)
+library(lubridate)
+library(rms)
+```
+
+# Thailand
+
+## Adults
+
+```{r, fig.width = 4, fig.asp = 0.67}
+demo_th_ad <- readxl::read_xlsx("/Users/kweisman/Desktop/TEMP_THAILAND/demographics/(BEETLES) Demographics THAILAND Adults.xlsx")
+
+demo_th_ad %>% count(Gender) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>%
+  mutate(Age = as.numeric(gsub("Missing Data", NA, Age))) %>%
+  summarise(age_median = median(Age, na.rm = T),
+                         age_min = min(Age, na.rm = T),
+                         age_max = max(Age, na.rm = T))
+
+demo_th_ad %>%
+  mutate(Age = as.numeric(gsub("Missing Data", NA, Age))) %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram(binwidth = 2) +
+  geom_vline(xintercept = median(as.numeric(demo_th_ad$Age), na.rm = T),
+             lty = 2, color = "dodgerblue") +
+  scale_x_continuous(breaks = seq(0, 100, 2)) +
+  theme_minimal()
+
+demo_th_ad %>% count(`Highest Education`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Parents Occupation`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Ethnicity`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Was where you grew up urban or rural?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Were you born in Thailand?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`What languages doyou speak at home growing up?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Do you feel you can afford the things you need, like Clothing Shoes and Housing?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`What is the general class of your community?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`Do you think you are richer or poorer than most of the people in your community?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`I consider myself a religious or spiritual person?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`What religion do you practice if any?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`What church/temple do you attend most regularly now, if any?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+
+demo_th_ad %>% count(`If you are Christian, does your church encourage praying in tongues or seeking the gifts of the holy spirit?`) %>% mutate(prop = round(n/sum(n), 2)) %>% arrange(desc(n))
+```
+
