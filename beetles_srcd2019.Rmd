@@ -37,7 +37,7 @@ question_key <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects
 ```{r, include = F, warning = FALSE}
 # US adults PILOT
 d_us_ad_pilot_raw <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/analysis/_US pilot/beetles_pilot2_tidy.csv")
-d_us_ad_pilot_22 <- d_us_ad_pilot_raw %>%
+d_us_ad_pilot <- d_us_ad_pilot_raw %>%
   filter(scale == "beetles") %>%
   distinct(subid, character, question, response) %>%
   filter(!question %in% c("bleed", "mind", "soul")) %>%
@@ -85,9 +85,9 @@ d_us_ad_pilot_22 <- d_us_ad_pilot_raw %>%
 
 ## GH adults: NOT YET RUN
 ## GH children
-d_gh_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_tidy_2017-07-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
+d_gh_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_tidy_2017-07-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
 
-d_gh_ch_fante_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
+d_gh_ch_fante <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
   rename(subnum = subid) %>% 
   filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
   clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
@@ -96,27 +96,27 @@ d_gh_ch_fante_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetl
 ## CH children: NOT YET RUN
 
 ## TH adults
-d_th_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ad")
+d_th_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ad")
 ## TH children
-d_th_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ch")
+d_th_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ch")
 
 ## VT adults
-d_vt_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ad")
+d_vt_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ad")
 ## VT children
-d_vt_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ch")
+d_vt_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ch")
 ```
 
 ```{r}
-d_all <- d_us_ad_pilot_22 %>% rownames_to_column("subid") %>%
-  full_join(d_gh_ch_22 %>% rownames_to_column("subid")) %>%
-  full_join(d_th_ad_22 %>% rownames_to_column("subid")) %>%
-  full_join(d_th_ch_22 %>% rownames_to_column("subid")) %>%
-  full_join(d_vt_ad_22 %>% rownames_to_column("subid")) %>%
-  full_join(d_vt_ch_22 %>% rownames_to_column("subid")) %>%
+d_all <- d_us_ad_pilot %>% rownames_to_column("subid") %>%
+  full_join(d_gh_ch %>% rownames_to_column("subid")) %>%
+  full_join(d_th_ad %>% rownames_to_column("subid")) %>%
+  full_join(d_th_ch %>% rownames_to_column("subid")) %>%
+  full_join(d_vt_ad %>% rownames_to_column("subid")) %>%
+  full_join(d_vt_ch %>% rownames_to_column("subid")) %>%
   column_to_rownames("subid")
 ```
 
-# EFA
+# Shared conceptual structure
 
 Pooling all participants from all sites together into a common factor structure.
 
@@ -204,6 +204,175 @@ scoresplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) +
 ```{r, fig.width = 5, fig.asp = 1}
 itemsplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) + 
   labs(title = "Minimizing BIC")
+```
+
+
+
+## Preset criteria
+
+### How many factors to retain?
+
+```{r}
+reten_all_k <- reten_fun(d_all, rot_type = "oblimin"); reten_all_k
+```
+
+### What are these factors?
+
+```{r}
+efa_all_k <- fa(d_all, nfactors = reten_all_k, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_all_k) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_all_k, target = "all") + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_all_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+
+
+
+# Ghana: children
+
+## Parallel analysis
+
+### How many factors to retain?
+
+```{r}
+reten_gh_ch_PA <- fa.parallel(d_gh_ch, plot = F); reten_gh_ch_PA
+reten_gh_ch_par <- reten_gh_ch_PA$nfact
+```
+
+### What are these factors?
+
+```{r}
+efa_gh_ch_par <- fa(d_gh_ch, nfactors = reten_gh_ch_par, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_gh_ch_par) + 
+  labs(title = "Parallel Analysis")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_gh_ch_par, target = "all") + 
+  labs(title = "Parallel Analysis")
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_gh_ch_par, target = c("ghosts", "God", "children")) + 
+  labs(title = "Parallel Analysis")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_gh_ch_par, target = c("ghosts", "God", "children")) + 
+  labs(title = "Parallel Analysis")
+```
+
+
+## Minimizing BIC
+
+### How many factors to retain?
+
+```{r}
+reten_gh_ch_BIC <- VSS(d_gh_ch, plot = F); reten_gh_ch_BIC
+reten_gh_ch_bic <- data.frame(reten_gh_ch_BIC$vss.stats %>% rownames_to_column("nfact") %>% top_n(-1, BIC))$nfact %>% as.numeric()
+```
+
+### What are these factors?
+
+```{r}
+efa_gh_ch_bic <- fa(d_gh_ch, nfactors = reten_gh_ch_bic, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+heatmap_fun(efa_gh_ch_bic) + 
+  labs(title = "Minimizing BIC")
+  # labs(title = "Figure 1: Shared conceptual structure")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_gh_ch_bic, target = "all") + #, highlight = "supernatural") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1,
+                                   color = c(rep("black", 8),
+                                             rep("#984ea3", 2)),
+                                   face = c(rep("plain", 8),
+                                            rep("bold", 2)))) +
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  labs(title = "Minimizing BIC")
+  # labs(title = "Figure 2: Factor scores")
+```
+
+```{r, fig.width = 3.5, fig.asp = 1}
+scoresplot_fun(efa_gh_ch_bic, target = c("ghosts", "God", "children")) + 
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  labs(title = "Minimizing BIC")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_gh_ch_bic, target = c("ghosts", "God", "children")) + 
+  labs(title = "Minimizing BIC")
+```
+
+
+
+## Preset criteria
+
+### How many factors to retain?
+
+```{r}
+reten_gh_ch_k <- reten_fun(d_gh_ch, rot_type = "oblimin"); reten_gh_ch_k
+```
+
+### What are these factors?
+
+```{r}
+efa_gh_ch_k <- fa(d_gh_ch, nfactors = reten_gh_ch_k, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_gh_ch_k) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_gh_ch_k, target = "all") + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_gh_ch_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_gh_ch_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
 ```
 
 
