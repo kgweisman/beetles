@@ -1,0 +1,200 @@
+---
+title: "SRCD 2019 Symposium: Religious & metaphysical concepts (Srinivasan)"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+
+```{r global_options, include = F}
+knitr::opts_chunk$set(fig.width = 3, fig.asp = 0.67)
+```
+
+```{r}
+# load required libraries
+library(tidyverse)
+library(langcog) # source: https://github.com/langcog/langcog-package
+library(psych)
+library(lme4)
+
+# set theme for ggplots
+theme_set(theme_bw())
+```
+
+```{r, include = F}
+source("./scripts/max_factors_efa.R")
+source("./scripts/plot_fun_beetles.R")
+source("./scripts/reten_fun.R")
+source("./scripts/clean_fun.R")
+```
+
+# Data preparation
+
+```{r, include = F}
+question_key <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/design/beetles cb.csv")
+```
+
+```{r, include = F, warning = FALSE}
+# US adults PILOT
+d_us_ad_pilot_raw <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/analysis/_US pilot/beetles_pilot2_tidy.csv")
+d_us_ad_pilot_22 <- d_us_ad_pilot_raw %>%
+  filter(scale == "beetles") %>%
+  distinct(subid, character, question, response) %>%
+  filter(!question %in% c("bleed", "mind", "soul")) %>%
+  mutate(question = recode(question,
+                           "add_subtract" = "add and subtract numbers",
+                           "angry" = "get angry",
+                           # "bleed" = "bleed when they touch something sharp",
+                           "choose" = "choose what to do",
+                           "figure_out" = "figure out how to do things",
+                           "guilty" = "feel guilty",
+                           "happy" = "feel happy",
+                           "hear" = "hear things",
+                           "hungry" = "get hungry",
+                           "hurt_feelings" = "get hurt feelings",
+                           "love" = "feel love",
+                           # "mind" = "have minds",
+                           "pain" = "feel pain",
+                           "pray" = "pray", 
+                           "proud" = "feel proud",
+                           "remember" = "remember things",
+                           "sad" = "feel sad",
+                           "scared" = "feel scared",
+                           "sense_far" = "sense when things are far away",
+                           "sense_temp" = "sense temperatures",
+                           "shy" = "feel shy",
+                           "sick" = "feel sick, like when you feel like you might vomit",
+                           "smell" = "smell things",
+                           # "soul" = "have souls",
+                           "think" = "think about things",
+                           "tired" = "feel tired")) %>%
+  spread(question, response) %>%
+  select(-subid) %>%
+  mutate(subid = paste("us_ad",
+                       10001:(10000+length(levels(factor(d_us_ad_pilot_raw$subid)))),
+                       "target",
+                       character,
+                       sep = "_")) %>%
+  column_to_rownames("subid") %>%
+  select(-`add and subtract numbers`, -character)
+```
+
+```{r, include = F, warning = FALSE}
+## US adults: NOT YET RUN
+## US children: NOT YET RUN
+
+## GH adults: NOT YET RUN
+## GH children
+d_gh_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_tidy_2017-07-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
+
+d_gh_ch_fante_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
+  rename(subnum = subid) %>% 
+  filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
+  clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
+
+## CH adults: NOT YET RUN
+## CH children: NOT YET RUN
+
+## TH adults
+d_th_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ad")
+## TH children
+d_th_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ch")
+
+## VT adults
+d_vt_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ad")
+## VT children
+d_vt_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ch")
+```
+
+```{r}
+d_all <- d_us_ad_pilot_22 %>% rownames_to_column("subid") %>%
+  full_join(d_gh_ch_22 %>% rownames_to_column("subid")) %>%
+  full_join(d_th_ad_22 %>% rownames_to_column("subid")) %>%
+  full_join(d_th_ch_22 %>% rownames_to_column("subid")) %>%
+  full_join(d_vt_ad_22 %>% rownames_to_column("subid")) %>%
+  full_join(d_vt_ch_22 %>% rownames_to_column("subid")) %>%
+  column_to_rownames("subid")
+```
+
+# EFA
+
+Pooling all participants from all sites together into a common factor structure.
+
+## Parallel analysis
+
+### How many factors to retain?
+
+```{r}
+reten_all_PA <- fa.parallel(d_all, plot = F); reten_all_PA
+reten_all_par <- reten_all_PA$nfact
+```
+
+### What are these factors?
+
+```{r}
+efa_all_par <- fa(d_all, nfactors = reten_all_par, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_all_par) + 
+  labs(title = "Parallel Analysis")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_all_par, target = "all") + 
+  labs(title = "Parallel Analysis")
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_all_par, target = c("ghosts", "God", "children")) + 
+  labs(title = "Parallel Analysis")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_par, target = c("ghosts", "God", "children")) + 
+  labs(title = "Parallel Analysis")
+```
+
+
+## Minimizing BIC
+
+### How many factors to retain?
+
+```{r}
+reten_all_BIC <- VSS(d_all, plot = F); reten_all_BIC
+reten_all_bic <- data.frame(reten_all_BIC$vss.stats %>% rownames_to_column("nfact") %>% top_n(-1, BIC))$nfact %>% as.numeric()
+```
+
+### What are these factors?
+
+```{r}
+efa_all_bic <- fa(d_all, nfactors = reten_all_bic, rotate = "oblimin",
+                  scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_all_bic) + 
+  labs(title = "Minimizing BIC")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_all_bic, target = "all") + 
+  labs(title = "Minimizing BIC")
+```
+
+```{r, fig.width = 3, fig.asp = 1}
+scoresplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) + 
+  labs(title = "Minimizing BIC")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) + 
+  labs(title = "Minimizing BIC")
+```
+
+
