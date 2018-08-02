@@ -175,20 +175,29 @@ efa_all_bic <- fa(d_all, nfactors = reten_all_bic, rotate = "oblimin",
                   scores = "tenBerge", impute = "median")
 ```
 
-```{r, fig.width = 3, fig.asp = 2}
+```{r, fig.width = 3, fig.asp = 1}
 heatmap_fun(efa_all_bic) + 
   labs(title = "Minimizing BIC")
+  # labs(title = "Figure 1: Shared conceptual structure")
 ```
 
 ### Which capacities are attributed to which targets?
 
 ```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_all_bic, target = "all") + 
+scoresplot_fun(efa_all_bic, target = "all") + #, highlight = "supernatural") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1,
+                                   color = c(rep("black", 8),
+                                             rep("#984ea3", 2)),
+                                   face = c(rep("plain", 8),
+                                            rep("bold", 2)))) +
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
   labs(title = "Minimizing BIC")
+  # labs(title = "Figure 2: Factor scores")
 ```
 
-```{r, fig.width = 3, fig.asp = 1}
+```{r, fig.width = 3.5, fig.asp = 1}
 scoresplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) + 
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
   labs(title = "Minimizing BIC")
 ```
 

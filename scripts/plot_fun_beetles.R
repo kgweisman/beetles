@@ -51,7 +51,7 @@ heatmap_fun <- function(efa){
 }
 
 # make function for plotting factor scores by factor, target
-scoresplot_fun <- function(efa, target){
+scoresplot_fun <- function(efa, target, highlight = "none"){
   
   # generate list of targets
   if(target == "all"){
@@ -64,6 +64,15 @@ scoresplot_fun <- function(efa, target){
     target_list <- "God"
   } else {
     target_list <- target
+  }
+  
+  # generate list of targets to highlight
+  if(highlight == "none"){
+    highlight_list <- c()
+  } else if(highlight == "supernatural"){
+    highlight_list <- c("ghosts", "God")
+  } else {
+    highlight_list <- highlight
   }
   
   # make usable dataframe
@@ -89,7 +98,10 @@ scoresplot_fun <- function(efa, target){
                                 "vt" = "Vanuatu"),
            age = recode_factor(age,
                                "ad" = "adults",
-                               "ch" = "children"))
+                               "ch" = "children"),
+           highlight = factor(ifelse(target %in% highlight_list,
+                                     "highlight", "no_highlight"),
+                              levels = c("no_highlight", "highlight")))
   
   # get bootstrapped means
   df_boot <- df %>%
@@ -108,7 +120,10 @@ scoresplot_fun <- function(efa, target){
                                 "vt" = "Vanuatu"),
            age = recode_factor(age,
                                "ad" = "adults",
-                               "ch" = "children"))
+                               "ch" = "children"),
+           highlight = factor(ifelse(target %in% highlight_list,
+                                     "highlight", "no_highlight"),
+                              levels = c("no_highlight", "highlight")))
   
   # get first items for subtitle
   first_items <- efa$loadings[] %>%
@@ -145,24 +160,28 @@ scoresplot_fun <- function(efa, target){
   subtitle <- gsub("\\n$", "", subtitle)
   
   # make plot
-  plot <- ggplot(df,
-                 aes(x = target, 
-                     y = score, 
-                     color = factor)) +
+  plot <- ggplot(df, aes(x = target, y = score, fill = factor)) +
     facet_grid(rows = vars(factor), cols = vars(site, age)) +
     geom_hline(yintercept = 0, lty = 2, color = "darkgray") +
-    geom_point(alpha = 0.25, 
+    geom_point(alpha = 0.25, color = "NA", shape = 21,
                position = position_jitter(width = 0.25, height = 0)) +
-    geom_pointrange(data = df_boot,
-                    aes(y = mean, ymin = ci_lower, ymax = ci_upper),
-                    color = "black", fatten = 0.75) +
+    geom_errorbar(data = df_boot,
+                  aes(y = mean, ymin = ci_lower, ymax = ci_upper, 
+                      color = highlight),
+                  width = 0) +
+    geom_point(data = df_boot,
+               aes(y = mean, 
+                   color = highlight, size = highlight)) +
+    scale_fill_brewer(palette = "Set1") +
+    scale_color_manual(values = c("black", "#984ea3")) +
+    scale_size_manual(values = c(0.75, 2)) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
     labs(x = "target character",
          y = "factor score",
          subtitle = subtitle,
          caption = "Error bars are bootstrapped 95% confidence intervals") +
-    guides(color = "none")
+    guides(fill = "none", color = "none", size = "none")
   # guides(color = guide_legend(override.aes = list(alpha = 1, size = 1)))
   
   return(plot)
