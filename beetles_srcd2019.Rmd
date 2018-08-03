@@ -16,6 +16,7 @@ library(tidyverse)
 library(langcog) # source: https://github.com/langcog/langcog-package
 library(psych)
 library(lme4)
+library(cowplot)
 
 # set theme for ggplots
 theme_set(theme_bw())
@@ -175,23 +176,26 @@ efa_all_bic <- fa(d_all, nfactors = reten_all_bic, rotate = "oblimin",
                   scores = "tenBerge", impute = "median")
 ```
 
-```{r, fig.width = 3, fig.asp = 1}
-heatmap_fun(efa_all_bic) + 
-  labs(title = "Minimizing BIC")
-  # labs(title = "Figure 1: Shared conceptual structure")
+```{r, fig.width = 4}
+heatmap_fun(efa_all_bic, factor_names = c("BODILY", "COGNITIVE", "SOCIAL-EMOTIONAL")) + 
+  # labs(title = "Minimizing BIC")
+  # labs(x = "Figure 1: Shared conceptual structure") +
+  theme(axis.title.x = element_text(hjust = 0)) +
+  guides(fill = guide_colorbar("factor loading", barheight = 15))
 ```
 
 ### Which capacities are attributed to which targets?
 
-```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_all_bic, target = "all") + #, highlight = "supernatural") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1,
+```{r, fig.width = 4, fig.asp = 0.8}
+scoresplot_fun(efa_all_bic, target = "all", highlight = "supernatural",
+               factor_names = c("BODILY", "COGNITIVE", "SOCIAL-EMOTIONAL")) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1,
                                    color = c(rep("black", 8),
                                              rep("#984ea3", 2)),
                                    face = c(rep("plain", 8),
                                             rep("bold", 2)))) +
-  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
-  labs(title = "Minimizing BIC")
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) #+
+  # labs(title = "Minimizing BIC")
   # labs(title = "Figure 2: Factor scores")
 ```
 
@@ -248,131 +252,54 @@ itemsplot_fun(efa_all_k, target = c("ghosts", "God", "children")) +
 
 
 
-# Ghana: children
+# Comparing conceptual structures
 
-## Parallel analysis
-
-### How many factors to retain?
+We'll extract 4 factors from all samples, to keep things simple.
 
 ```{r}
-reten_gh_ch_PA <- fa.parallel(d_gh_ch, plot = F); reten_gh_ch_PA
-reten_gh_ch_par <- reten_gh_ch_PA$nfact
+efa_us_ad_4 <- fa(d_us_ad_pilot, nfactors = 4, rotate = "oblimin")
+efa_gh_ch_4 <- fa(d_gh_ch, nfactors = 4, rotate = "oblimin")
+efa_th_ad_4 <- fa(d_th_ad, nfactors = 4, rotate = "oblimin")
+efa_th_ch_4 <- fa(d_th_ch, nfactors = 4, rotate = "oblimin")
+efa_vt_ad_4 <- fa(d_vt_ad, nfactors = 4, rotate = "oblimin")
+efa_vt_ch_4 <- fa(d_vt_ch, nfactors = 4, rotate = "oblimin")
 ```
-
-### What are these factors?
 
 ```{r}
-efa_gh_ch_par <- fa(d_gh_ch, nfactors = reten_gh_ch_par, rotate = "oblimin",
-                  scores = "tenBerge", impute = "median")
+plot_us_ad_4 <- heatmap_fun(efa_us_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "US: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ch_4 <- heatmap_fun(efa_gh_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ad_4 <- heatmap_fun(efa_th_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ch_4 <- heatmap_fun(efa_th_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ad_4 <- heatmap_fun(efa_vt_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ch_4 <- heatmap_fun(efa_vt_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: children") +
+  theme(axis.title.x = element_text(hjust = 0))
 ```
 
-```{r, fig.width = 3, fig.asp = 2}
-heatmap_fun(efa_gh_ch_par) + 
-  labs(title = "Parallel Analysis")
+```{r, fig.asp = 1.5}
+plot_grid(plot_us_ad_4, plot_gh_ch_4, plot_th_ad_4, 
+          plot_th_ch_4, plot_vt_ad_4, plot_vt_ch_4, 
+          ncol = 2, labels = c("A", "B", "C", "D", "E", "F"))
 ```
-
-### Which capacities are attributed to which targets?
-
-```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_gh_ch_par, target = "all") + 
-  labs(title = "Parallel Analysis")
-```
-
-```{r, fig.width = 3, fig.asp = 1.5}
-scoresplot_fun(efa_gh_ch_par, target = c("ghosts", "God", "children")) + 
-  labs(title = "Parallel Analysis")
-```
-
-```{r, fig.width = 5, fig.asp = 1}
-itemsplot_fun(efa_gh_ch_par, target = c("ghosts", "God", "children")) + 
-  labs(title = "Parallel Analysis")
-```
-
-
-## Minimizing BIC
-
-### How many factors to retain?
-
-```{r}
-reten_gh_ch_BIC <- VSS(d_gh_ch, plot = F); reten_gh_ch_BIC
-reten_gh_ch_bic <- data.frame(reten_gh_ch_BIC$vss.stats %>% rownames_to_column("nfact") %>% top_n(-1, BIC))$nfact %>% as.numeric()
-```
-
-### What are these factors?
-
-```{r}
-efa_gh_ch_bic <- fa(d_gh_ch, nfactors = reten_gh_ch_bic, rotate = "oblimin",
-                  scores = "tenBerge", impute = "median")
-```
-
-```{r, fig.width = 3, fig.asp = 1}
-heatmap_fun(efa_gh_ch_bic) + 
-  labs(title = "Minimizing BIC")
-  # labs(title = "Figure 1: Shared conceptual structure")
-```
-
-### Which capacities are attributed to which targets?
-
-```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_gh_ch_bic, target = "all") + #, highlight = "supernatural") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1,
-                                   color = c(rep("black", 8),
-                                             rep("#984ea3", 2)),
-                                   face = c(rep("plain", 8),
-                                            rep("bold", 2)))) +
-  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
-  labs(title = "Minimizing BIC")
-  # labs(title = "Figure 2: Factor scores")
-```
-
-```{r, fig.width = 3.5, fig.asp = 1}
-scoresplot_fun(efa_gh_ch_bic, target = c("ghosts", "God", "children")) + 
-  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
-  labs(title = "Minimizing BIC")
-```
-
-```{r, fig.width = 5, fig.asp = 1}
-itemsplot_fun(efa_gh_ch_bic, target = c("ghosts", "God", "children")) + 
-  labs(title = "Minimizing BIC")
-```
-
-
-
-## Preset criteria
-
-### How many factors to retain?
-
-```{r}
-reten_gh_ch_k <- reten_fun(d_gh_ch, rot_type = "oblimin"); reten_gh_ch_k
-```
-
-### What are these factors?
-
-```{r}
-efa_gh_ch_k <- fa(d_gh_ch, nfactors = reten_gh_ch_k, rotate = "oblimin",
-                  scores = "tenBerge", impute = "median")
-```
-
-```{r, fig.width = 3, fig.asp = 2}
-heatmap_fun(efa_gh_ch_k) + 
-  labs(title = "Preset criteria (Weisman et al., 2017)")
-```
-
-### Which capacities are attributed to which targets?
-
-```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_gh_ch_k, target = "all") + 
-  labs(title = "Preset criteria (Weisman et al., 2017)")
-```
-
-```{r, fig.width = 3, fig.asp = 1.5}
-scoresplot_fun(efa_gh_ch_k, target = c("ghosts", "God", "children")) + 
-  labs(title = "Preset criteria (Weisman et al., 2017)")
-```
-
-```{r, fig.width = 5, fig.asp = 1}
-itemsplot_fun(efa_gh_ch_k, target = c("ghosts", "God", "children")) + 
-  labs(title = "Preset criteria (Weisman et al., 2017)")
-```
-
 

@@ -2,13 +2,19 @@ library(tidyverse)
 library(psych)
 
 # make function for generating heatmap
-heatmap_fun <- function(efa){
+heatmap_fun <- function(efa, factor_names = NA){
+  
+  # get factor names
+  if(is.na(factor_names)){
+    factor_names <- paste("Factor", 1:efa$factors)
+  }
   
   # get factor loadings
   loadings <- efa$loadings[] %>%
     data.frame() %>%
     rownames_to_column("capacity") %>%
-    gather(factor, loading, -capacity)
+    gather(factor, loading, -capacity) %>%
+    mutate(factor = as.character(factor(factor, labels = factor_names)))
   
   # get fa.sort() order
   order <- loadings %>%
@@ -26,7 +32,8 @@ heatmap_fun <- function(efa){
     filter(stat == "Proportion Explained") %>%
     select(-stat) %>%
     gather(factor, var) %>%
-    mutate(var = paste0(factor, "\n(", round(var, 2)*100, "%)"))
+    mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
+    mutate(var = paste0(factor, "\n(", round(var, 2)*100, "% shared var.)"))
   
   # make plot
   plot <- ggplot(loadings %>% 
@@ -51,7 +58,7 @@ heatmap_fun <- function(efa){
 }
 
 # make function for plotting factor scores by factor, target
-scoresplot_fun <- function(efa, target, highlight = "none"){
+scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
   
   # generate list of targets
   if(target == "all"){
@@ -73,6 +80,11 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
     highlight_list <- c("ghosts", "God")
   } else {
     highlight_list <- highlight
+  }
+  
+  # get factor names
+  if(is.na(factor_names)){
+    factor_names <- paste("Factor", 1:efa$factors)
   }
   
   # make usable dataframe
@@ -101,7 +113,8 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
                                "ch" = "children"),
            highlight = factor(ifelse(target %in% highlight_list,
                                      "highlight", "no_highlight"),
-                              levels = c("no_highlight", "highlight")))
+                              levels = c("no_highlight", "highlight")),
+           factor = as.character(factor(factor, labels = factor_names)))
   
   # get bootstrapped means
   df_boot <- df %>%
@@ -130,6 +143,7 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
     data.frame() %>%
     rownames_to_column("capacity") %>%
     gather(factor, loading, -capacity) %>%
+    mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
     group_by(factor) %>%
     top_n(3, abs(loading)) %>%
     mutate(capacity = gsub("_", " ", capacity),
@@ -140,14 +154,15 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
     distinct() %>%
     mutate(funs(as.character))
   
-  # get percent shared variance explained for subtitle
+  # get percent shared variance explained
   shared_var <- efa$Vaccounted %>%
     data.frame() %>%
     rownames_to_column("stat") %>%
     filter(stat == "Proportion Explained") %>%
     select(-stat) %>%
     gather(factor, var) %>%
-    mutate(var = paste0(round(var, 2)*100, "% of shared variance"))
+    mutate(factor = as.character(factor(factor, labels = factor_names)),
+           var = paste0(round(var, 2)*100, "% shared variance"))
   
   subtitle <- c()
   for(i in 1:nrow(first_items)){
@@ -177,7 +192,7 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
     scale_size_manual(values = c(0.75, 2)) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
-    labs(x = "target character",
+    labs(x = "target entity",
          y = "factor score",
          subtitle = subtitle,
          caption = "Error bars are bootstrapped 95% confidence intervals") +
@@ -189,7 +204,7 @@ scoresplot_fun <- function(efa, target, highlight = "none"){
 }
 
 # make function for plotting individual item means by factor, target
-itemsplot_fun <- function(efa, target){
+itemsplot_fun <- function(efa, target, factor_names = NA){
   
   # generate list of targets
   if(target == "all"){
@@ -204,6 +219,11 @@ itemsplot_fun <- function(efa, target){
     target_list <- target
   }
   
+  # get factor names
+  if(is.na(factor_names)){
+    factor_names <- paste("Factor", 1:efa$factors)
+  }
+
   # make usable dataframe
   df <- d_all %>%
     rownames_to_column("subid") %>%
@@ -232,13 +252,15 @@ itemsplot_fun <- function(efa, target){
   loadings <- efa$loadings[] %>%
     data.frame() %>%
     rownames_to_column("capacity") %>%
-    gather(factor, loading, -capacity)
+    gather(factor, loading, -capacity) %>%
+    mutate(factor = as.character(factor(factor, labels = factor_names)))
   
   # get fa.sort() order
   order <- efa$loadings[] %>%
     data.frame() %>%
     rownames_to_column("capacity") %>%
     gather(factor, loading, -capacity) %>%
+    mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
     group_by(capacity) %>%
     top_n(1, abs(loading)) %>%
     ungroup() %>%
@@ -254,7 +276,8 @@ itemsplot_fun <- function(efa, target){
     group_by(site, age, target, factor, capacity, order) %>%
     multi_boot_standard("response", na.rm = T) %>%
     ungroup() %>%
-    mutate(capacity = gsub("_", " ", capacity))
+    mutate(capacity = gsub("_", " ", capacity),
+           factor = as.character(factor(factor, labels = factor_names)))
   
   # make plot
   plot <- ggplot(df_boot %>%
@@ -273,7 +296,7 @@ itemsplot_fun <- function(efa, target){
     theme(legend.position = "top",
           axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
     labs(y = "response", x = "",
-         color = "target character", shape = "target character",
+         color = "target entity", shape = "target entity",
          caption = "Error bars are bootstrapped 95% confidence intervals") +
     coord_flip()
   
