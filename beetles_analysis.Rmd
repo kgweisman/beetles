@@ -24,11 +24,13 @@ library(dendextend)
 
 ```{r functions, include = F}
 ## make function to clean up kid data from US
-clean_fun <- function(df, key, ex_final3 = TRUE, cap_exclude = NULL) {
+clean_fun <- function(df, key, ex_final3 = TRUE, cap_exclude = NULL,
+                      char_exclude = "pigs") {
   
   df_clean <- df %>%
     full_join(key) %>%
     filter(!question %in% cap_exclude,
+           !character %in% char_exclude,
            !is.na(subnum), !is.na(question)) %>%
     mutate(responseNum = recode(response,
                                 "no" = 0,
@@ -192,8 +194,8 @@ cluster_fun <- function(df, n_factors, rot){
 }
 
 ## make function to plot congruence across samples
-loadings_fun <- function(df, n_factors = reten_fact_fun(df, "oblimin"), 
-                         rot = "oblimin", label){
+loadings_fun <- function(df, n_factors = reten_fact_fun(df, "varimax"), 
+                         rot = "varimax", label){
   d_efa <- fa(df, n_factors, rot)$loadings[] %>%
     data.frame() %>%
     rownames_to_column("capacity") %>%
@@ -279,32 +281,32 @@ d_vt_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuat
 
 ## US Adults: MTurk pilot
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_us_ad_pilot_23, max_fact_fun(ncol(d_us_ad_pilot_23)), "oblimin") +
+heatmap_fun(d_us_ad_pilot_23, max_fact_fun(ncol(d_us_ad_pilot_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: US Adults (MTurk Pilot)",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_us_ad_pilot_23, 4, "oblimin") +
+heatmap_fun(d_us_ad_pilot_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_us_ad_pilot_23, reten_fact_fun(d_us_ad_pilot_23, "oblimin"), "oblimin") +
+heatmap_fun(d_us_ad_pilot_23, reten_fact_fun(d_us_ad_pilot_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: US Adults (MTurk Pilot)",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -317,7 +319,7 @@ d_us_ad_pilot_23_parallel <- fa.parallel(d_us_ad_pilot_23)
 Parallel analysis suggests retaining `r d_us_ad_pilot_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_us_ad_pilot_23_bic <- VSS(d_us_ad_pilot_23, n = max_fact_fun(ncol(d_us_ad_pilot_23)), rotate = "oblimin", plot = F)
+d_us_ad_pilot_23_bic <- VSS(d_us_ad_pilot_23, n = max_fact_fun(ncol(d_us_ad_pilot_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_us_ad_pilot_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
@@ -325,15 +327,15 @@ Minimizing BIC suggests retaining `r d_us_ad_pilot_23_bic$vss.stats %>% rownames
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_us_ad_pilot_23, reten_fact_fun(d_us_ad_pilot_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_us_ad_pilot_23, reten_fact_fun(d_us_ad_pilot_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: US Adults (MTurk Pilot)",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_us_ad_pilot_23, 4, "oblimin")$scores[] %>%
+fa(d_us_ad_pilot_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   gather(factor, score, -subid) %>%
@@ -359,7 +361,7 @@ fa(d_us_ad_pilot_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -370,33 +372,33 @@ fa(d_us_ad_pilot_23, 4, "oblimin")$scores[] %>%
 
 ## GH Adults (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ad_23, max_fact_fun(ncol(d_gh_ad_23)), "oblimin") +
+heatmap_fun(d_gh_ad_23, max_fact_fun(ncol(d_gh_ad_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ad_23, 4, "oblimin") +
+heatmap_fun(d_gh_ad_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -409,30 +411,30 @@ d_gh_ad_23_parallel <- fa.parallel(d_gh_ad_23)
 Parallel analysis suggests retaining `r d_gh_ad_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_gh_ad_23_bic <- VSS(d_gh_ad_23, n = max_fact_fun(ncol(d_gh_ad_23)), rotate = "oblimin", plot = F)
+d_gh_ad_23_bic <- VSS(d_gh_ad_23, n = max_fact_fun(ncol(d_gh_ad_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ad_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_23, 5, "oblimin") +
+heatmap_fun(d_gh_ad_23, 5, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ad_23, 4, "oblimin")$scores[] %>%
+fa(d_gh_ad_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -457,40 +459,40 @@ fa(d_gh_ad_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## GH Children (English)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_23, max_fact_fun(ncol(d_gh_ch_23)), "oblimin") +
+heatmap_fun(d_gh_ch_23, max_fact_fun(ncol(d_gh_ch_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_23, 4, "oblimin") +
+heatmap_fun(d_gh_ch_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_23, reten_fact_fun(d_gh_ch_23, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_23, reten_fact_fun(d_gh_ch_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -503,30 +505,30 @@ d_gh_ch_23_parallel <- fa.parallel(d_gh_ch_23)
 Parallel analysis suggests retaining `r d_gh_ch_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_gh_ch_23_bic <- VSS(d_gh_ch_23, n = max_fact_fun(ncol(d_gh_ch_23)), rotate = "oblimin", plot = F)
+d_gh_ch_23_bic <- VSS(d_gh_ch_23, n = max_fact_fun(ncol(d_gh_ch_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_23, 2, "oblimin") +
+heatmap_fun(d_gh_ch_23, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_23, reten_fact_fun(d_gh_ch_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_23, reten_fact_fun(d_gh_ch_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_23, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -551,7 +553,7 @@ fa(d_gh_ch_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -559,33 +561,33 @@ fa(d_gh_ch_23, 4, "oblimin")$scores[] %>%
 
 ## GH Children (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_fante_23, max_fact_fun(ncol(d_gh_ch_fante_23)), "oblimin") +
+heatmap_fun(d_gh_ch_fante_23, max_fact_fun(ncol(d_gh_ch_fante_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_fante_23, 4, "oblimin") +
+heatmap_fun(d_gh_ch_fante_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_fante_23, reten_fact_fun(d_gh_ch_fante_23, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_fante_23, reten_fact_fun(d_gh_ch_fante_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -598,30 +600,30 @@ d_gh_ch_fante_23_parallel <- fa.parallel(d_gh_ch_fante_23)
 Parallel analysis suggests retaining `r d_gh_ch_fante_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_gh_ch_fante_23_bic <- VSS(d_gh_ch_fante_23, n = max_fact_fun(ncol(d_gh_ch_fante_23)), rotate = "oblimin", plot = F)
+d_gh_ch_fante_23_bic <- VSS(d_gh_ch_fante_23, n = max_fact_fun(ncol(d_gh_ch_fante_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_fante_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_fante_23, 2, "oblimin") +
+heatmap_fun(d_gh_ch_fante_23, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_fante_23, reten_fact_fun(d_gh_ch_fante_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_fante_23, reten_fact_fun(d_gh_ch_fante_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_fante_23, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_fante_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   # mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -647,39 +649,39 @@ fa(d_gh_ch_fante_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children (Fante)",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ad_23, max_fact_fun(ncol(d_th_ad_23)), "oblimin") +
+heatmap_fun(d_th_ad_23, max_fact_fun(ncol(d_th_ad_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ad_23, 4, "oblimin") +
+heatmap_fun(d_th_ad_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_23, reten_fact_fun(d_th_ad_23, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ad_23, reten_fact_fun(d_th_ad_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -692,30 +694,30 @@ d_th_ad_23_parallel <- fa.parallel(d_th_ad_23)
 Parallel analysis suggests retaining `r d_th_ad_23_parallel$nfact` factors: See 4-factor solution, above.
 
 ```{r, include = F}
-d_th_ad_23_bic <- VSS(d_th_ad_23, n = max_fact_fun(ncol(d_th_ad_23)), rotate = "oblimin", plot = F)
+d_th_ad_23_bic <- VSS(d_th_ad_23, n = max_fact_fun(ncol(d_th_ad_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ad_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_23, 2, "oblimin") +
+heatmap_fun(d_th_ad_23, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ad_23, reten_fact_fun(d_th_ad_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ad_23, reten_fact_fun(d_th_ad_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ad_23, 4, "oblimin")$scores[] %>%
+fa(d_th_ad_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -741,39 +743,39 @@ fa(d_th_ad_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ch_23, max_fact_fun(ncol(d_th_ch_23)), "oblimin") +
+heatmap_fun(d_th_ch_23, max_fact_fun(ncol(d_th_ch_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ch_23, 4, "oblimin") +
+heatmap_fun(d_th_ch_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_23, reten_fact_fun(d_th_ch_23, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ch_23, reten_fact_fun(d_th_ch_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -786,30 +788,30 @@ d_th_ch_23_parallel <- fa.parallel(d_th_ch_23)
 Parallel analysis suggests retaining `r d_th_ch_23_parallel$nfact` factors: See 4-factor solution, above.
 
 ```{r, include = F}
-d_th_ch_23_bic <- VSS(d_th_ch_23, n = max_fact_fun(ncol(d_th_ch_23)), rotate = "oblimin", plot = F)
+d_th_ch_23_bic <- VSS(d_th_ch_23, n = max_fact_fun(ncol(d_th_ch_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ch_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_23, 3, "oblimin") +
+heatmap_fun(d_th_ch_23, 3, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ch_23, reten_fact_fun(d_th_ch_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ch_23, reten_fact_fun(d_th_ch_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ch_23, 4, "oblimin")$scores[] %>%
+fa(d_th_ch_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -835,7 +837,7 @@ fa(d_th_ch_23, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -846,32 +848,32 @@ fa(d_th_ch_23, 4, "oblimin")$scores[] %>%
 
 ## VT Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ad_23, max_fact_fun(ncol(d_vt_ad_23)), "oblimin") +
+heatmap_fun(d_vt_ad_23, max_fact_fun(ncol(d_vt_ad_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ad_23, 4, "oblimin") +
+heatmap_fun(d_vt_ad_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ad_23, reten_fact_fun(d_vt_ad_23, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ad_23, reten_fact_fun(d_vt_ad_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -884,28 +886,36 @@ d_vt_ad_23_parallel <- fa.parallel(d_vt_ad_23)
 Parallel analysis suggests retaining `r d_vt_ad_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_vt_ad_23_bic <- VSS(d_vt_ad_23, n = max_fact_fun(ncol(d_vt_ad_23)), rotate = "oblimin", plot = F)
+d_vt_ad_23_bic <- VSS(d_vt_ad_23, n = max_fact_fun(ncol(d_vt_ad_23)), rotate = "varimax", plot = F)
 ```
 
-Minimizing BIC suggests retaining `r d_vt_ad_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
+Minimizing BIC suggests retaining `r d_vt_ad_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_vt_ad_23, 2, "varimax") +
+  labs(title = "Factor loadings, after retention: VT Adults",
+       subtitle = "Including all 23 capacities; after varimax rotation",
+       x = "", y = "", fill = "")
+```
+
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ad_23, reten_fact_fun(d_vt_ad_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ad_23, reten_fact_fun(d_vt_ad_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ad_23, 4, "oblimin")$scores[] %>%
+fa(d_vt_ad_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -915,52 +925,54 @@ fa(d_vt_ad_23, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God"))) %>%
+                                       "children", "ghosts", "God"))) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
              color = character)) +
   facet_wrap(~ factor) +
   geom_pointrange() +
-  scale_color_manual(guide = "none",
-                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(guide = "none", palette = "Paired") +
+  # scale_color_manual(guide = "none",
+  #                    values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+  #                               "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+  #                               # "#b15928", 
+  #                               "#cab2d6", "#6a3d9a")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Adults",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## VT Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ch_23, max_fact_fun(ncol(d_vt_ch_23)), "oblimin") +
+heatmap_fun(d_vt_ch_23, max_fact_fun(ncol(d_vt_ch_23)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ch_23, 4, "oblimin") +
+heatmap_fun(d_vt_ch_23, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_23, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_23, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_23, reten_fact_fun(d_vt_ch_23, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ch_23, reten_fact_fun(d_vt_ch_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -973,35 +985,35 @@ d_vt_ch_23_parallel <- fa.parallel(d_vt_ch_23)
 Parallel analysis suggests retaining `r d_vt_ch_23_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_vt_ch_23_bic <- VSS(d_vt_ch_23, n = max_fact_fun(ncol(d_vt_ch_23)), rotate = "oblimin", plot = F)
+d_vt_ch_23_bic <- VSS(d_vt_ch_23, n = max_fact_fun(ncol(d_vt_ch_23)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_vt_ch_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_23, 2, "oblimin") +
+heatmap_fun(d_vt_ch_23, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ch_23, reten_fact_fun(d_vt_ch_23, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ch_23, reten_fact_fun(d_vt_ch_23, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ch_23, 4, "oblimin")$scores[] %>%
+fa(d_vt_ch_23, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -1011,20 +1023,17 @@ fa(d_vt_ch_23, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God"))) %>%
+                                       "children", "ghosts", "God"))) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
              color = character)) +
   facet_wrap(~ factor) +
   geom_pointrange() +
-  scale_color_manual(guide = "none",
-                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(guide = "none", palette = "Paired") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Children",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -1079,7 +1088,7 @@ ggplot(cong23, aes(x = factorA, y = factorB,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   labs(title = "Congruence between 4-factor solutions across samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1120,15 +1129,15 @@ loadings_23 %>%
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-2, 3)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 
 # do factor analysis on factor loadings
-heatmap_fun(loadings_23, reten_fact_fun(loadings_23, "oblimin"), "oblimin")
+heatmap_fun(loadings_23, reten_fact_fun(loadings_23, "varimax"), "varimax")
 # fa.parallel(loadings_23)
-heatmap_fun(loadings_23, 3, "oblimin")
+heatmap_fun(loadings_23, 3, "varimax")
 
 # do cluster analysis on factor loadings after factor analysis
-fa(loadings_23, reten_fact_fun(loadings_23, "oblimin"), "oblimin")$loadings[] %>%
+fa(loadings_23, reten_fact_fun(loadings_23, "varimax"), "varimax")$loadings[] %>%
   data.frame() %>%
   dist() %>%
   hclust() %>%
@@ -1143,7 +1152,7 @@ fa(loadings_23, reten_fact_fun(loadings_23, "oblimin"), "oblimin")$loadings[] %>
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-2, 2)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation")
+       subtitle = "Including all 23 capacities; after varimax rotation")
 ```
 
 ## Master EFA
@@ -1156,23 +1165,23 @@ d_all_23 <- d_us_ad_pilot_23 %>%
   bind_rows(d_vt_ad_23) %>%
   bind_rows(d_vt_ch_23)
 
-heatmap_fun(d_all_23, reten_fact_fun(d_all_23, "oblimin"), "oblimin") +
+heatmap_fun(d_all_23, reten_fact_fun(d_all_23, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: All samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 
 # fa.parallel(d_all_23)
 
-heatmap_fun(d_all_23, 4, "oblimin") +
+heatmap_fun(d_all_23, 4, "varimax") +
   labs(title = "Factor loadings, parallel analysis & minimizing BIC: All samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 
 # VSS(d_all_23)
 
-heatmap_fun(d_all_23, 3, "oblimin") +
+heatmap_fun(d_all_23, 3, "varimax") +
   labs(title = "Factor loadings, 3-factor solution: All samples",
-       subtitle = "Including all 23 capacities; after oblimin rotation",
+       subtitle = "Including all 23 capacities; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1215,32 +1224,32 @@ d_vt_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuat
 
 ## US Adults: MTurk pilot
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_us_ad_pilot_22, max_fact_fun(ncol(d_us_ad_pilot_22)), "oblimin") +
+heatmap_fun(d_us_ad_pilot_22, max_fact_fun(ncol(d_us_ad_pilot_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_us_ad_pilot_22, 4, "oblimin") +
+heatmap_fun(d_us_ad_pilot_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_us_ad_pilot_22, reten_fact_fun(d_us_ad_pilot_22, "oblimin"), "oblimin") +
+heatmap_fun(d_us_ad_pilot_22, reten_fact_fun(d_us_ad_pilot_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1253,7 +1262,7 @@ d_us_ad_pilot_22_parallel <- fa.parallel(d_us_ad_pilot_22)
 Parallel analysis suggests retaining `r d_us_ad_pilot_22_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_us_ad_pilot_22_bic <- VSS(d_us_ad_pilot_22, n = max_fact_fun(ncol(d_us_ad_pilot_22)), rotate = "oblimin", plot = F)
+d_us_ad_pilot_22_bic <- VSS(d_us_ad_pilot_22, n = max_fact_fun(ncol(d_us_ad_pilot_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_us_ad_pilot_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
@@ -1261,15 +1270,15 @@ Minimizing BIC suggests retaining `r d_us_ad_pilot_22_bic$vss.stats %>% rownames
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_us_ad_pilot_22, reten_fact_fun(d_us_ad_pilot_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_us_ad_pilot_22, reten_fact_fun(d_us_ad_pilot_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_us_ad_pilot_22, 4, "oblimin")$scores[] %>%
+fa(d_us_ad_pilot_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   gather(factor, score, -subid) %>%
@@ -1295,7 +1304,7 @@ fa(d_us_ad_pilot_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -1306,32 +1315,32 @@ fa(d_us_ad_pilot_22, 4, "oblimin")$scores[] %>%
 
 ## GH Adults (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ad_22, max_fact_fun(ncol(d_gh_ad_22)), "oblimin") +
+heatmap_fun(d_gh_ad_22, max_fact_fun(ncol(d_gh_ad_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ad_22, 4, "oblimin") +
+heatmap_fun(d_gh_ad_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1344,30 +1353,30 @@ d_gh_ad_22_parallel <- fa.parallel(d_gh_ad_22)
 Parallel analysis suggests retaining `r d_gh_ad_22_parallel$nfact` factors: See 2-factor solution, above.
 
 ```{r, include = F}
-d_gh_ad_22_bic <- VSS(d_gh_ad_22, n = max_fact_fun(ncol(d_gh_ad_22)), rotate = "oblimin", plot = F)
+d_gh_ad_22_bic <- VSS(d_gh_ad_22, n = max_fact_fun(ncol(d_gh_ad_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_22, d_gh_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "oblimin") +
+heatmap_fun(d_gh_ad_22, d_gh_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "varimax") +
   labs(title = "Factor loadings, after retention: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ad_22, 4, "oblimin")$scores[] %>%
+fa(d_gh_ad_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -1392,39 +1401,39 @@ fa(d_gh_ad_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## GH Children (English)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_22, max_fact_fun(ncol(d_gh_ch_22)), "oblimin") +
+heatmap_fun(d_gh_ch_22, max_fact_fun(ncol(d_gh_ch_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_22, 4, "oblimin") +
+heatmap_fun(d_gh_ch_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_22, reten_fact_fun(d_gh_ch_22, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_22, reten_fact_fun(d_gh_ch_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1437,7 +1446,7 @@ d_gh_ch_22_parallel <- fa.parallel(d_gh_ch_22)
 Parallel analysis suggests retaining `r d_gh_ch_22_parallel$nfact` factors: See 2-factor solution, above.
 
 ```{r, include = F}
-d_gh_ch_22_bic <- VSS(d_gh_ch_22, n = max_fact_fun(ncol(d_gh_ch_22)), rotate = "oblimin", plot = F)
+d_gh_ch_22_bic <- VSS(d_gh_ch_22, n = max_fact_fun(ncol(d_gh_ch_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
@@ -1445,15 +1454,15 @@ Minimizing BIC suggests retaining `r d_gh_ch_22_bic$vss.stats %>% rownames_to_co
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_22, reten_fact_fun(d_gh_ch_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_22, reten_fact_fun(d_gh_ch_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_22, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -1478,39 +1487,39 @@ fa(d_gh_ch_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## GH Children (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_fante_22, max_fact_fun(ncol(d_gh_ch_fante_22)), "oblimin") +
+heatmap_fun(d_gh_ch_fante_22, max_fact_fun(ncol(d_gh_ch_fante_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_fante_22, 4, "oblimin") +
+heatmap_fun(d_gh_ch_fante_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_fante_22, reten_fact_fun(d_gh_ch_fante_22, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_fante_22, reten_fact_fun(d_gh_ch_fante_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1523,38 +1532,38 @@ d_gh_ch_fante_22_parallel <- fa.parallel(d_gh_ch_fante_22)
 Parallel analysis suggests retaining `r d_gh_ch_fante_22_parallel$nfact` factors: 
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_fante_22, 2, "oblimin") +
+heatmap_fun(d_gh_ch_fante_22, 2, "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
 ```{r, include = F}
-d_gh_ch_fante_22_bic <- VSS(d_gh_ch_fante_22, n = max_fact_fun(ncol(d_gh_ch_fante_22)), rotate = "oblimin", plot = F)
+d_gh_ch_fante_22_bic <- VSS(d_gh_ch_fante_22, n = max_fact_fun(ncol(d_gh_ch_fante_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_fante_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
 
 ```{r, fig.width = 4, fig.asp = 1}
-# heatmap_fun(d_gh_ch_fante_22, 2, "oblimin") +
+# heatmap_fun(d_gh_ch_fante_22, 2, "varimax") +
 #   labs(title = "Factor loadings, after retention: GH Children",
-#        subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+#        subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
 #        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_fante_22, reten_fact_fun(d_gh_ch_fante_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_fante_22, reten_fact_fun(d_gh_ch_fante_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_fante_22, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_fante_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   # mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -1579,39 +1588,39 @@ fa(d_gh_ch_fante_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ad_22, max_fact_fun(ncol(d_th_ad_22)), "oblimin") +
+heatmap_fun(d_th_ad_22, max_fact_fun(ncol(d_th_ad_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ad_22, 4, "oblimin") +
+heatmap_fun(d_th_ad_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_22, reten_fact_fun(d_th_ad_22, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ad_22, reten_fact_fun(d_th_ad_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1624,30 +1633,30 @@ d_th_ad_22_parallel <- fa.parallel(d_th_ad_22)
 Parallel analysis suggests retaining `r d_th_ad_22_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_th_ad_22_bic <- VSS(d_th_ad_22, n = max_fact_fun(ncol(d_th_ad_22)), rotate = "oblimin", plot = F)
+d_th_ad_22_bic <- VSS(d_th_ad_22, n = max_fact_fun(ncol(d_th_ad_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_22, 2, "oblimin") +
+heatmap_fun(d_th_ad_22, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ad_22, reten_fact_fun(d_th_ad_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ad_22, reten_fact_fun(d_th_ad_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ad_22, 4, "oblimin")$scores[] %>%
+fa(d_th_ad_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -1673,39 +1682,39 @@ fa(d_th_ad_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ch_22, max_fact_fun(ncol(d_th_ch_22)), "oblimin") +
+heatmap_fun(d_th_ch_22, max_fact_fun(ncol(d_th_ch_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ch_22, 4, "oblimin") +
+heatmap_fun(d_th_ch_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_22, reten_fact_fun(d_th_ch_22, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ch_22, reten_fact_fun(d_th_ch_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1718,30 +1727,30 @@ d_th_ch_22_parallel <- fa.parallel(d_th_ch_22)
 Parallel analysis suggests retaining `r d_th_ch_22_parallel$nfact` factors: See 4-factor solution, above.
 
 ```{r, include = F}
-d_th_ch_22_bic <- VSS(d_th_ch_22, n = max_fact_fun(ncol(d_th_ch_22)), rotate = "oblimin", plot = F)
+d_th_ch_22_bic <- VSS(d_th_ch_22, n = max_fact_fun(ncol(d_th_ch_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ch_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_22, 3, "oblimin") +
+heatmap_fun(d_th_ch_22, 3, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ch_22, reten_fact_fun(d_th_ch_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ch_22, reten_fact_fun(d_th_ch_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ch_22, 4, "oblimin")$scores[] %>%
+fa(d_th_ch_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -1767,7 +1776,7 @@ fa(d_th_ch_22, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -1778,32 +1787,32 @@ fa(d_th_ch_22, 4, "oblimin")$scores[] %>%
 
 ## VT Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ad_22, max_fact_fun(ncol(d_vt_ad_22)), "oblimin") +
+heatmap_fun(d_vt_ad_22, max_fact_fun(ncol(d_vt_ad_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ad_22, 4, "oblimin") +
+heatmap_fun(d_vt_ad_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ad_22, reten_fact_fun(d_vt_ad_22, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ad_22, reten_fact_fun(d_vt_ad_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1816,36 +1825,28 @@ d_vt_ad_22_parallel <- fa.parallel(d_vt_ad_22)
 Parallel analysis suggests retaining `r d_vt_ad_22_parallel$nfact` factors:  See 3-factor solution, above.
 
 ```{r, include = F}
-d_vt_ad_22_bic <- VSS(d_vt_ad_22, n = max_fact_fun(ncol(d_vt_ad_22)), rotate = "oblimin", plot = F)
+d_vt_ad_22_bic <- VSS(d_vt_ad_22, n = max_fact_fun(ncol(d_vt_ad_22)), rotate = "varimax", plot = F)
 ```
 
-Minimizing BIC suggests retaining `r d_vt_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
-
-```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_22, 2, "oblimin") +
-  labs(title = "Factor loadings, minimizing BIC: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
-       x = "", y = "", fill = "")
-```
-
+Minimizing BIC suggests retaining `r d_vt_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ad_22, reten_fact_fun(d_vt_ad_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ad_22, reten_fact_fun(d_vt_ad_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ad_22, 4, "oblimin")$scores[] %>%
+fa(d_vt_ad_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -1855,52 +1856,49 @@ fa(d_vt_ad_22, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God"))) %>%
+                                       "children", "ghosts", "God"))) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
              color = character)) +
   facet_wrap(~ factor) +
   geom_pointrange() +
-  scale_color_manual(guide = "none",
-                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(guide = "none", palette = "Paired") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## VT Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ch_22, max_fact_fun(ncol(d_vt_ch_22)), "oblimin") +
+heatmap_fun(d_vt_ch_22, max_fact_fun(ncol(d_vt_ch_22)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ch_22, 4, "oblimin") +
+heatmap_fun(d_vt_ch_22, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_22, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_22, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_22, reten_fact_fun(d_vt_ch_22, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ch_22, reten_fact_fun(d_vt_ch_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -1913,35 +1911,35 @@ d_vt_ch_22_parallel <- fa.parallel(d_vt_ch_22)
 Parallel analysis suggests retaining `r d_vt_ch_22_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_vt_ch_22_bic <- VSS(d_vt_ch_22, n = max_fact_fun(ncol(d_vt_ch_22)), rotate = "oblimin", plot = F)
+d_vt_ch_22_bic <- VSS(d_vt_ch_22, n = max_fact_fun(ncol(d_vt_ch_22)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_vt_ch_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_22, 2, "oblimin") +
+heatmap_fun(d_vt_ch_22, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ch_22, reten_fact_fun(d_vt_ch_22, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ch_22, reten_fact_fun(d_vt_ch_22, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ch_22, 4, "oblimin")$scores[] %>%
+fa(d_vt_ch_22, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -1951,20 +1949,17 @@ fa(d_vt_ch_22, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God"))) %>%
+                                       "children", "ghosts", "God"))) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
              color = character)) +
   facet_wrap(~ factor) +
   geom_pointrange() +
-  scale_color_manual(guide = "none",
-                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(guide = "none", palette = "Paired") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -2018,7 +2013,7 @@ ggplot(cong22, aes(x = factorA, y = factorB,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   labs(title = "Congruence between 4-factor solutions across samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2090,15 +2085,15 @@ loadings_22 %>%
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-4, 3)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 
 # do factor analysis on factor loadings
-heatmap_fun(loadings_22, reten_fact_fun(loadings_22, "oblimin"), "oblimin")
+heatmap_fun(loadings_22, reten_fact_fun(loadings_22, "varimax"), "varimax")
 # fa.parallel(loadings_22)
-heatmap_fun(loadings_22, 4, "oblimin")
+heatmap_fun(loadings_22, 4, "varimax")
 
 # do cluster analysis on factor loadings after factor analysis
-fa(loadings_22, reten_fact_fun(loadings_22, "oblimin"), "oblimin")$loadings[] %>%
+fa(loadings_22, reten_fact_fun(loadings_22, "varimax"), "varimax")$loadings[] %>%
   data.frame() %>%
   dist() %>%
   hclust() %>%
@@ -2113,7 +2108,7 @@ fa(loadings_22, reten_fact_fun(loadings_22, "oblimin"), "oblimin")$loadings[] %>
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-3, 2)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation")
 ```
 
 ```{r, include = F}
@@ -2128,17 +2123,17 @@ prop_var_fun <- function(df, n_factors, rot){
 }
 
 d_varexp_22 <- bind_rows(
-  prop_var_fun(d_us_ad_pilot_22, 4, "oblimin") %>%
+  prop_var_fun(d_us_ad_pilot_22, 4, "varimax") %>%
     mutate(site = "US", age = "adults"),
-  prop_var_fun(d_gh_ch_22, 4, "oblimin") %>%
+  prop_var_fun(d_gh_ch_22, 4, "varimax") %>%
     mutate(site = "GH", age = "children"),
-  prop_var_fun(d_th_ad_22, 4, "oblimin") %>%
+  prop_var_fun(d_th_ad_22, 4, "varimax") %>%
     mutate(site = "TH", age = "adults"),
-  prop_var_fun(d_th_ch_22, 4, "oblimin") %>%
+  prop_var_fun(d_th_ch_22, 4, "varimax") %>%
     mutate(site = "TH", age = "children"),
-  prop_var_fun(d_vt_ad_22, 4, "oblimin") %>%
+  prop_var_fun(d_vt_ad_22, 4, "varimax") %>%
     mutate(site = "VT", age = "adults"),
-  prop_var_fun(d_vt_ch_22, 4, "oblimin") %>%
+  prop_var_fun(d_vt_ch_22, 4, "varimax") %>%
     mutate(site = "VT", age = "children")) %>%
   select(-stat) %>%
   mutate(factor = paste(tolower(site), substr(age, 1, 2), factor, sep = "_"),
@@ -2157,23 +2152,23 @@ d_all_22 <- d_us_ad_pilot_22 %>%
   bind_rows(d_vt_ad_22) %>%
   bind_rows(d_vt_ch_22)
 
-heatmap_fun(d_all_22, reten_fact_fun(d_all_22, "oblimin"), "oblimin") +
+heatmap_fun(d_all_22, reten_fact_fun(d_all_22, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: All samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 
 # fa.parallel(d_all_22)
 
-heatmap_fun(d_all_22, 4, "oblimin") +
+heatmap_fun(d_all_22, 4, "varimax") +
   labs(title = "Factor loadings, parallel analysis: All samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 
 # VSS(d_all_22)
 
-heatmap_fun(d_all_22, 3, "oblimin") +
+heatmap_fun(d_all_22, 3, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: All samples",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2226,7 +2221,7 @@ subids <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templ
 ```
 
 ```{r, fig.width = 6, fig.asp = 0.7}
-fa(d_all_22_subid, 4, "oblimin")$scores[] %>%
+fa(d_all_22_subid, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   gather(factor, score, -subid) %>%
@@ -2253,7 +2248,7 @@ fa(d_all_22_subid, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God")),
+                                       "children", "ghosts", "God")),
          site = factor(site, levels = c("US", "TH", "VT", "GH")),
          age = factor(age, levels = c("adults", "children")),
          langauge = factor(language, levels = c("English", "Fante", "Thai", 
@@ -2264,15 +2259,13 @@ fa(d_all_22_subid, 4, "oblimin")$scores[] %>%
   facet_grid(factor ~ interaction(age, langauge, site)) +
   # geom_hline(yintercept = 0, lty = 3) +
   geom_pointrange() +
-  scale_color_manual(values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(palette = "Paired") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         legend.position = "right",
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: All samples to date",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -2315,32 +2308,32 @@ d_vt_ch_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuat
 
 ## US Adults: MTurk pilot
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_us_ad_pilot_21, max_fact_fun(ncol(d_us_ad_pilot_21)), "oblimin") +
+heatmap_fun(d_us_ad_pilot_21, max_fact_fun(ncol(d_us_ad_pilot_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_us_ad_pilot_21, 4, "oblimin") +
+heatmap_fun(d_us_ad_pilot_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "oblimin"), "oblimin") +
+heatmap_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2353,7 +2346,7 @@ d_us_ad_pilot_21_parallel <- fa.parallel(d_us_ad_pilot_21)
 Parallel analysis suggests retaining `r d_us_ad_pilot_21_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_us_ad_pilot_21_bic <- VSS(d_us_ad_pilot_21, n = max_fact_fun(ncol(d_us_ad_pilot_21)), rotate = "oblimin", plot = F)
+d_us_ad_pilot_21_bic <- VSS(d_us_ad_pilot_21, n = max_fact_fun(ncol(d_us_ad_pilot_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_us_ad_pilot_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
@@ -2361,15 +2354,15 @@ Minimizing BIC suggests retaining `r d_us_ad_pilot_21_bic$vss.stats %>% rownames
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers', 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers', 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_us_ad_pilot_21, 4, "oblimin")$scores[] %>%
+fa(d_us_ad_pilot_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   gather(factor, score, -subid) %>%
@@ -2395,7 +2388,7 @@ fa(d_us_ad_pilot_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: US Adults (MTurk Pilot)",
-       subtitle = "Excluding 'add and subtract numbers', 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers', 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -2406,32 +2399,32 @@ fa(d_us_ad_pilot_21, 4, "oblimin")$scores[] %>%
 
 ## GH Adults (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ad_21, max_fact_fun(ncol(d_gh_ad_21)), "oblimin") +
+heatmap_fun(d_gh_ad_21, max_fact_fun(ncol(d_gh_ad_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ad_21, 4, "oblimin") +
+heatmap_fun(d_gh_ad_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2444,30 +2437,30 @@ d_gh_ad_21_parallel <- fa.parallel(d_gh_ad_21)
 Parallel analysis suggests retaining `r d_gh_ad_21_parallel$nfact` factors: See 2-factor solution, above.
 
 ```{r, include = F}
-d_gh_ad_21_bic <- VSS(d_gh_ad_21, n = max_fact_fun(ncol(d_gh_ad_21)), rotate = "oblimin", plot = F)
+d_gh_ad_21_bic <- VSS(d_gh_ad_21, n = max_fact_fun(ncol(d_gh_ad_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ad_21, d_gh_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "oblimin") +
+heatmap_fun(d_gh_ad_21, d_gh_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "varimax") +
   labs(title = "Factor loadings, after retention: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ad_21, 4, "oblimin")$scores[] %>%
+fa(d_gh_ad_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -2492,39 +2485,39 @@ fa(d_gh_ad_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## GH Children (English)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_21, max_fact_fun(ncol(d_gh_ch_21)), "oblimin") +
+heatmap_fun(d_gh_ch_21, max_fact_fun(ncol(d_gh_ch_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_21, 4, "oblimin") +
+heatmap_fun(d_gh_ch_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2538,15 +2531,15 @@ Parallel analysis suggests retaining `r d_gh_ch_21_parallel$nfact` factors:
 
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_21, d_gh_ch_21_parallel$nfact, "oblimin") +
+heatmap_fun(d_gh_ch_21, d_gh_ch_21_parallel$nfact, "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
 ```{r, include = F}
-d_gh_ch_21_bic <- VSS(d_gh_ch_21, n = max_fact_fun(ncol(d_gh_ch_21)), rotate = "oblimin", plot = F)
+d_gh_ch_21_bic <- VSS(d_gh_ch_21, n = max_fact_fun(ncol(d_gh_ch_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
@@ -2554,15 +2547,15 @@ Minimizing BIC suggests retaining `r d_gh_ch_21_bic$vss.stats %>% rownames_to_co
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_21, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -2587,39 +2580,39 @@ fa(d_gh_ch_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## GH Children (Fante)
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_gh_ch_fante_21, max_fact_fun(ncol(d_gh_ch_fante_21)), "oblimin") +
+heatmap_fun(d_gh_ch_fante_21, max_fact_fun(ncol(d_gh_ch_fante_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_gh_ch_fante_21, 4, "oblimin") +
+heatmap_fun(d_gh_ch_fante_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "oblimin"), "oblimin") +
+heatmap_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2632,30 +2625,30 @@ d_gh_ch_fante_21_parallel <- fa.parallel(d_gh_ch_fante_21)
 Parallel analysis suggests retaining `r d_gh_ch_fante_21_parallel$nfact` factors: See 2-factor solution, above. 
 
 ```{r, include = F}
-d_gh_ch_fante_21_bic <- VSS(d_gh_ch_fante_21, n = max_fact_fun(ncol(d_gh_ch_fante_21)), rotate = "oblimin", plot = F)
+d_gh_ch_fante_21_bic <- VSS(d_gh_ch_fante_21, n = max_fact_fun(ncol(d_gh_ch_fante_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_gh_ch_fante_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
 
 ```{r, fig.width = 4, fig.asp = 1}
-# heatmap_fun(d_gh_ch_fante_21, 2, "oblimin") +
+# heatmap_fun(d_gh_ch_fante_21, 2, "varimax") +
 #   labs(title = "Factor loadings, after retention: GH Children",
-#        subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+#        subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
 #        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_gh_ch_fante_21, 4, "oblimin")$scores[] %>%
+fa(d_gh_ch_fante_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   # mutate(subid = paste("ghana", subid, sep = "_")) %>%
@@ -2680,39 +2673,39 @@ fa(d_gh_ch_fante_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: GH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ad_21, max_fact_fun(ncol(d_th_ad_21)), "oblimin") +
+heatmap_fun(d_th_ad_21, max_fact_fun(ncol(d_th_ad_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ad_21, 4, "oblimin") +
+heatmap_fun(d_th_ad_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2725,30 +2718,30 @@ d_th_ad_21_parallel <- fa.parallel(d_th_ad_21)
 Parallel analysis suggests retaining `r d_th_ad_21_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_th_ad_21_bic <- VSS(d_th_ad_21, n = max_fact_fun(ncol(d_th_ad_21)), rotate = "oblimin", plot = F)
+d_th_ad_21_bic <- VSS(d_th_ad_21, n = max_fact_fun(ncol(d_th_ad_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ad_21, 2, "oblimin") +
+heatmap_fun(d_th_ad_21, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ad_21, 4, "oblimin")$scores[] %>%
+fa(d_th_ad_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -2774,39 +2767,39 @@ fa(d_th_ad_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## TH Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_th_ch_21, max_fact_fun(ncol(d_th_ch_21)), "oblimin") +
+heatmap_fun(d_th_ch_21, max_fact_fun(ncol(d_th_ch_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_th_ch_21, 4, "oblimin") +
+heatmap_fun(d_th_ch_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "oblimin"), "oblimin") +
+heatmap_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2819,15 +2812,15 @@ d_th_ch_21_parallel <- fa.parallel(d_th_ch_21)
 Parallel analysis suggests retaining `r d_th_ch_21_parallel$nfact` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_21, 3, "oblimin") +
+heatmap_fun(d_th_ch_21, 3, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 
 ```{r, include = F}
-d_th_ch_21_bic <- VSS(d_th_ch_21, n = max_fact_fun(ncol(d_th_ch_21)), rotate = "oblimin", plot = F)
+d_th_ch_21_bic <- VSS(d_th_ch_21, n = max_fact_fun(ncol(d_th_ch_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_th_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
@@ -2835,15 +2828,15 @@ Minimizing BIC suggests retaining `r d_th_ch_21_bic$vss.stats %>% rownames_to_co
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_th_ch_21, 4, "oblimin")$scores[] %>%
+fa(d_th_ch_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
@@ -2869,7 +2862,7 @@ fa(d_th_ch_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: TH Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -2880,32 +2873,32 @@ fa(d_th_ch_21, 4, "oblimin")$scores[] %>%
 
 ## VT Adults
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ad_21, max_fact_fun(ncol(d_vt_ad_21)), "oblimin") +
+heatmap_fun(d_vt_ad_21, max_fact_fun(ncol(d_vt_ad_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ad_21, 4, "oblimin") +
+heatmap_fun(d_vt_ad_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -2915,17 +2908,10 @@ heatmap_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "oblimin"), "oblimin") +
 d_vt_ad_21_parallel <- fa.parallel(d_vt_ad_21)
 ```
 
-Parallel analysis suggests retaining `r d_vt_ad_21_parallel$nfact` factors: 
-
-```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_21, 3, "oblimin") +
-  labs(title = "Factor loadings, minimizing BIC: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
-       x = "", y = "", fill = "")
-```
+Parallel analysis suggests retaining `r d_vt_ad_21_parallel$nfact` factors: See 2-factor solution above.
 
 ```{r, include = F}
-d_vt_ad_21_bic <- VSS(d_vt_ad_21, n = max_fact_fun(ncol(d_vt_ad_21)), rotate = "oblimin", plot = F)
+d_vt_ad_21_bic <- VSS(d_vt_ad_21, n = max_fact_fun(ncol(d_vt_ad_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_vt_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
@@ -2933,20 +2919,20 @@ Minimizing BIC suggests retaining `r d_vt_ad_21_bic$vss.stats %>% rownames_to_co
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ad_21, 4, "oblimin")$scores[] %>%
+fa(d_vt_ad_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -2956,52 +2942,49 @@ fa(d_vt_ad_21, 4, "oblimin")$scores[] %>%
   mutate(character = factor(character, 
                             levels = c("cell phones", "rocks", "flowers", 
                                        "beetles*", "chickens", "mice", "dogs", 
-                                       "children", "pigs", "ghosts", "God"))) %>%
+                                       "children", "ghosts", "God"))) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
              color = character)) +
   facet_wrap(~ factor) +
   geom_pointrange() +
-  scale_color_manual(guide = "none",
-                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
-                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
-                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  scale_color_brewer(guide = "none", palette = "Paired") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
 
 ## VT Children
 
-### Maximal structure, oblimin rotation
+### Maximal structure, varimax rotation
 
 ```{r, fig.width = 9, fig.asp = 0.4}
-heatmap_fun(d_vt_ch_21, max_fact_fun(ncol(d_vt_ch_21)), "oblimin") +
+heatmap_fun(d_vt_ch_21, max_fact_fun(ncol(d_vt_ch_21)), "varimax") +
   labs(title = "Factor loadings, maximal solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### 4 factors, oblimin rotation
+### 4 factors, varimax rotation
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-heatmap_fun(d_vt_ch_21, 4, "oblimin") +
+heatmap_fun(d_vt_ch_21, 4, "varimax") +
   labs(title = "Factor loadings, 4-factor solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
-### Reduced structure, oblimin rotation
+### Reduced structure, varimax rotation
 
-Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_21, "oblimin")` factors:
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_21, "varimax")` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "oblimin"), "oblimin") +
+heatmap_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -3014,30 +2997,30 @@ d_vt_ch_21_parallel <- fa.parallel(d_vt_ch_21)
 Parallel analysis suggests retaining `r d_vt_ch_21_parallel$nfact` factors: See 3-factor solution, above.
 
 ```{r, include = F}
-d_vt_ch_21_bic <- VSS(d_vt_ch_21, n = max_fact_fun(ncol(d_vt_ch_21)), rotate = "oblimin", plot = F)
+d_vt_ch_21_bic <- VSS(d_vt_ch_21, n = max_fact_fun(ncol(d_vt_ch_21)), rotate = "varimax", plot = F)
 ```
 
 Minimizing BIC suggests retaining `r d_vt_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
 
 ```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_vt_ch_21, 2, "oblimin") +
+heatmap_fun(d_vt_ch_21, 2, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
 
 ```{r, fig.width = 4, fig.asp = 0.67}
-cluster_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "oblimin"), rot = "oblimin") +
+cluster_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "varimax"), rot = "varimax") +
   labs(title = "Hierarchical clustering within reduced factor space: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ### Attributions to characters
 
 ```{r, fig.width = 3, fig.asp = 0.9}
-fa(d_vt_ch_21, 4, "oblimin")$scores[] %>%
+fa(d_vt_ch_21, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
@@ -3065,7 +3048,7 @@ fa(d_vt_ch_21, 4, "oblimin")$scores[] %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: VT Children",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -3119,7 +3102,7 @@ ggplot(cong21, aes(x = factorA, y = factorB,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   labs(title = "Congruence between 4-factor solutions across samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -3191,15 +3174,15 @@ loadings_21 %>%
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-4, 3)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 
 # do factor analysis on factor loadings
-heatmap_fun(loadings_21, reten_fact_fun(loadings_21, "oblimin"), "oblimin")
+heatmap_fun(loadings_21, reten_fact_fun(loadings_21, "varimax"), "varimax")
 # fa.parallel(loadings_21)
-heatmap_fun(loadings_21, 4, "oblimin")
+heatmap_fun(loadings_21, 4, "varimax")
 
 # do cluster analysis on factor loadings after factor analysis
-fa(loadings_21, reten_fact_fun(loadings_21, "oblimin"), "oblimin")$loadings[] %>%
+fa(loadings_21, reten_fact_fun(loadings_21, "varimax"), "varimax")$loadings[] %>%
   data.frame() %>%
   dist() %>%
   hclust() %>%
@@ -3214,7 +3197,7 @@ fa(loadings_21, reten_fact_fun(loadings_21, "oblimin"), "oblimin")$loadings[] %>
   # geom_hline(yintercept = 2, lty = 2, color = "black") +
   coord_cartesian(ylim = c(-3, 2)) +
   labs(title = "Hierarchical clustering of factors: All samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation")
 ```
 
 ```{r, include = F}
@@ -3229,17 +3212,17 @@ prop_var_fun <- function(df, n_factors, rot){
 }
 
 d_varexp_21 <- bind_rows(
-  prop_var_fun(d_us_ad_pilot_21, 4, "oblimin") %>%
+  prop_var_fun(d_us_ad_pilot_21, 4, "varimax") %>%
     mutate(site = "US", age = "adults"),
-  prop_var_fun(d_gh_ch_21, 4, "oblimin") %>%
+  prop_var_fun(d_gh_ch_21, 4, "varimax") %>%
     mutate(site = "GH", age = "children"),
-  prop_var_fun(d_th_ad_21, 4, "oblimin") %>%
+  prop_var_fun(d_th_ad_21, 4, "varimax") %>%
     mutate(site = "TH", age = "adults"),
-  prop_var_fun(d_th_ch_21, 4, "oblimin") %>%
+  prop_var_fun(d_th_ch_21, 4, "varimax") %>%
     mutate(site = "TH", age = "children"),
-  prop_var_fun(d_vt_ad_21, 4, "oblimin") %>%
+  prop_var_fun(d_vt_ad_21, 4, "varimax") %>%
     mutate(site = "VT", age = "adults"),
-  prop_var_fun(d_vt_ch_21, 4, "oblimin") %>%
+  prop_var_fun(d_vt_ch_21, 4, "varimax") %>%
     mutate(site = "VT", age = "children")) %>%
   select(-stat) %>%
   mutate(factor = paste(tolower(site), substr(age, 1, 2), factor, sep = "_"),
@@ -3258,23 +3241,23 @@ d_all_21 <- d_us_ad_pilot_21 %>%
   bind_rows(d_vt_ad_21) %>%
   bind_rows(d_vt_ch_21)
 
-heatmap_fun(d_all_21, reten_fact_fun(d_all_21, "oblimin"), "oblimin") +
+heatmap_fun(d_all_21, reten_fact_fun(d_all_21, "varimax"), "varimax") +
   labs(title = "Factor loadings, after retention: All samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 
 # fa.parallel(d_all_21)
 
-heatmap_fun(d_all_21, 4, "oblimin") +
+heatmap_fun(d_all_21, 4, "varimax") +
   labs(title = "Factor loadings, parallel analysis: All samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 
 # VSS(d_all_21)
 
-heatmap_fun(d_all_21, 3, "oblimin") +
+heatmap_fun(d_all_21, 3, "varimax") +
   labs(title = "Factor loadings, minimizing BIC: All samples",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "", fill = "")
 ```
 
@@ -3327,7 +3310,7 @@ subids <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templ
 ```
 
 ```{r, fig.width = 6, fig.asp = 0.7}
-fa(d_all_21_subid, 4, "oblimin")$scores[] %>%
+fa(d_all_21_subid, 4, "varimax")$scores[] %>%
   data.frame() %>%
   rownames_to_column("subid") %>%
   gather(factor, score, -subid) %>%
@@ -3373,7 +3356,7 @@ fa(d_all_21_subid, 4, "oblimin")$scores[] %>%
         legend.position = "right",
         panel.border = element_rect(fill = NA, color = "black")) +
   labs(title = "Factor scores, 4-factor solution: All samples to date",
-       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after varimax rotation",
        x = "", y = "Factor score")
 ```
 
@@ -3386,7 +3369,7 @@ paste0("GH adults: ", d_gh_ad_23 %>% nrow())
 paste0("GH children: ", d_gh_ch_23 %>% nrow())
 paste0("GH children (Fante): ", d_gh_ch_fante_23 %>% nrow())
 paste0("TH adults: ", d_th_ad_23 %>% nrow())
-paste0("TH adults: ", d_th_ch_23 %>% nrow())
+paste0("TH children: ", d_th_ch_23 %>% nrow())
 paste0("VT adults: ", d_vt_ad_23 %>% nrow())
-paste0("VT adults: ", d_vt_ch_23 %>% nrow())
+paste0("VT children: ", d_vt_ch_23 %>% nrow())
 ```
