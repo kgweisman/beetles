@@ -8,6 +8,8 @@ output:
 
 This is a notebook, updated after the degrees of freedom crisis of May 7-9, 2018, aimed at doing a first-pass analysis of all Beetles data to-date in the same notebook.
 
+Last updated: 2018-08-15
+
 ```{r global_options, include = F}
 knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F)
 ```
@@ -22,8 +24,7 @@ library(dendextend)
 
 ```{r functions, include = F}
 ## make function to clean up kid data from US
-clean_fun <- function(df, key, ex_final3 = TRUE, ex_addsub = FALSE,
-                      cap_exclude = NULL) {
+clean_fun <- function(df, key, ex_final3 = TRUE, cap_exclude = NULL) {
   
   df_clean <- df %>%
     full_join(key) %>%
@@ -70,11 +71,6 @@ clean_fun <- function(df, key, ex_final3 = TRUE, ex_addsub = FALSE,
                 `have minds`, `have souls`))
   }
 
-  if(ex_addsub) {
-    df_clean <- df_clean %>% 
-      select(-c(`add and subtract numbers`))
-  }
-  
   return(df_clean)
   
 }
@@ -256,25 +252,29 @@ d_us_ad_pilot_23 <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Proj
 ## US children: NOT YET RUN
 
 ## GH adults: NOT YET RUN
+d_gh_ad_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% clean_fun(key = question_key)
 ## GH children
-d_gh_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
-d_gh_ch_fante_23 <- read.csv("/Users/kweisman/Desktop/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
+d_gh_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
+d_gh_ch_fante_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
   rename(subnum = subid) %>% 
-  filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
+  filter(grepl("fante", tolower(language_home)) | 
+           grepl("fante", tolower(languages)) |
+           grepl("twi", tolower(language_home)) |
+           grepl("twi", tolower(languages))) %>%
   clean_fun(key = question_key)
 
 ## CH adults: NOT YET RUN
 ## CH children: NOT YET RUN
 
 ## TH adults
-d_th_ad_23 <- read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
+d_th_ad_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
 ## TH children
-d_th_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
+d_th_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
 
 ## VT adults
-d_vt_ad_23 <- read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
+d_vt_ad_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
 ## VT children
-d_vt_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
+d_vt_ch_23 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key)
 ```
 
 ## US Adults: MTurk pilot
@@ -368,7 +368,99 @@ fa(d_us_ad_pilot_23, 4, "oblimin")$scores[] %>%
 
 ## US Children: not yet run
 
-## GH Adults: not yet run
+## GH Adults (Fante)
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_gh_ad_23, max_fact_fun(ncol(d_gh_ad_23)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_gh_ad_23, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_23, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_gh_ad_23_parallel <- fa.parallel(d_gh_ad_23)
+```
+
+Parallel analysis suggests retaining `r d_gh_ad_23_parallel$nfact` factors: See 3-factor solution, above.
+
+```{r, include = F}
+d_gh_ad_23_bic <- VSS(d_gh_ad_23, n = max_fact_fun(ncol(d_gh_ad_23)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ad_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_23, 5, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_gh_ad_23, reten_fact_fun(d_gh_ad_23, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_gh_ad_23, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("ghana", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: GH Adults",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
 
 ## GH Children (English)
 
@@ -439,7 +531,7 @@ fa(d_gh_ch_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
   ungroup() %>%
@@ -509,13 +601,13 @@ Parallel analysis suggests retaining `r d_gh_ch_fante_23_parallel$nfact` factors
 d_gh_ch_fante_23_bic <- VSS(d_gh_ch_fante_23, n = max_fact_fun(ncol(d_gh_ch_fante_23)), rotate = "oblimin", plot = F)
 ```
 
-Minimizing BIC suggests retaining `r d_gh_ch_fante_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
+Minimizing BIC suggests retaining `r d_gh_ch_fante_23_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
 
 ```{r, fig.width = 4, fig.asp = 1}
-# heatmap_fun(d_gh_ch_fante_23, 2, "oblimin") +
-#   labs(title = "Factor loadings, minimizing BIC: GH Children",
-#        subtitle = "Including all 23 capacities; after oblimin rotation",
-#        x = "", y = "", fill = "")
+heatmap_fun(d_gh_ch_fante_23, 2, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: GH Children",
+       subtitle = "Including all 23 capacities; after oblimin rotation",
+       x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
@@ -534,7 +626,7 @@ fa(d_gh_ch_fante_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   # mutate(subid = paste("ghana", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% distinct(subid, character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
   ungroup() %>%
@@ -542,6 +634,7 @@ fa(d_gh_ch_fante_23, 4, "oblimin")$scores[] %>%
                             levels = c("cell phones", "rocks", "flowers",
                                        "beetles", "chickens", "mice", "dogs",
                                        "children", "pigs", "ghosts", "God"))) %>%
+  filter(!is.na(factor)) %>%
   ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper,
              color = character)) +
   facet_wrap(~ factor) +
@@ -627,7 +720,7 @@ fa(d_th_ad_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
@@ -721,7 +814,7 @@ fa(d_th_ch_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
@@ -812,7 +905,7 @@ fa(d_vt_ad_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -908,7 +1001,7 @@ fa(d_vt_ch_23, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -1094,26 +1187,30 @@ d_us_ad_pilot_22 <- d_us_ad_pilot_23 %>% select(-`add and subtract numbers`)
 ## US adults: NOT YET RUN
 ## US children: NOT YET RUN
 
-## GH adults: NOT YET RUN
+## GH adults
+d_gh_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 ## GH children
-d_gh_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = TRUE)
-d_gh_ch_fante_22 <- read.csv("/Users/kweisman/Desktop/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
+d_gh_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
+d_gh_ch_fante_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
   rename(subnum = subid) %>% 
-  filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
-  clean_fun(key = question_key, ex_addsub = TRUE)
+  filter(grepl("fante", tolower(language_home)) | 
+           grepl("fante", tolower(languages)) |
+           grepl("twi", tolower(language_home)) |
+           grepl("twi", tolower(languages))) %>%
+  clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 
 ## CH adults: NOT YET RUN
 ## CH children: NOT YET RUN
 
 ## TH adults
-d_th_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = TRUE)
+d_th_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 ## TH children
-d_th_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = TRUE)
+d_th_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 
 ## VT adults
-d_vt_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = TRUE)
+d_vt_ad_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 ## VT children
-d_vt_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = TRUE)
+d_vt_ch_22 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = "add and subtract numbers")
 ```
 
 ## US Adults: MTurk pilot
@@ -1207,7 +1304,98 @@ fa(d_us_ad_pilot_22, 4, "oblimin")$scores[] %>%
 
 ## US Children: not yet run
 
-## GH Adults: not yet run
+## GH Adults (Fante)
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_gh_ad_22, max_fact_fun(ncol(d_gh_ad_22)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_gh_ad_22, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_22, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_gh_ad_22_parallel <- fa.parallel(d_gh_ad_22)
+```
+
+Parallel analysis suggests retaining `r d_gh_ad_22_parallel$nfact` factors: See 2-factor solution, above.
+
+```{r, include = F}
+d_gh_ad_22_bic <- VSS(d_gh_ad_22, n = max_fact_fun(ncol(d_gh_ad_22)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_22, d_gh_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_gh_ad_22, reten_fact_fun(d_gh_ad_22, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_gh_ad_22, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("ghana", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_Adults_tidy_2018-08-12.csv") %>% distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
 
 ## GH Children (English)
 
@@ -1270,7 +1458,7 @@ fa(d_gh_ch_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("ghana", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
   ungroup() %>%
@@ -1332,19 +1520,27 @@ heatmap_fun(d_gh_ch_fante_22, reten_fact_fun(d_gh_ch_fante_22, "oblimin"), "obli
 d_gh_ch_fante_22_parallel <- fa.parallel(d_gh_ch_fante_22)
 ```
 
-Parallel analysis suggests retaining `r d_gh_ch_fante_22_parallel$nfact` factors: See 3-factor solution, above.
-
-```{r, include = F}
-d_gh_ch_fante_22_bic <- VSS(d_gh_ch_fante_22, n = max_fact_fun(ncol(d_gh_ch_fante_22)), rotate = "oblimin", plot = F)
-```
-
-Minimizing BIC suggests retaining `r d_gh_ch_fante_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
+Parallel analysis suggests retaining `r d_gh_ch_fante_22_parallel$nfact` factors: 
 
 ```{r, fig.width = 4, fig.asp = 1}
 heatmap_fun(d_gh_ch_fante_22, 2, "oblimin") +
   labs(title = "Factor loadings, after retention: GH Children",
        subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
        x = "", y = "", fill = "")
+```
+
+
+```{r, include = F}
+d_gh_ch_fante_22_bic <- VSS(d_gh_ch_fante_22, n = max_fact_fun(ncol(d_gh_ch_fante_22)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ch_fante_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+
+```{r, fig.width = 4, fig.asp = 1}
+# heatmap_fun(d_gh_ch_fante_22, 2, "oblimin") +
+#   labs(title = "Factor loadings, after retention: GH Children",
+#        subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+#        x = "", y = "", fill = "")
 ```
 
 ### Clustering within reduced factor space
@@ -1363,7 +1559,7 @@ fa(d_gh_ch_fante_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   # mutate(subid = paste("ghana", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% distinct(subid, character)) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% distinct(subid, character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
   ungroup() %>%
@@ -1456,7 +1652,7 @@ fa(d_th_ad_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
@@ -1550,7 +1746,7 @@ fa(d_th_ch_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("thailand", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   group_by(character, factor) %>%
   do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
@@ -1617,20 +1813,21 @@ heatmap_fun(d_vt_ad_22, reten_fact_fun(d_vt_ad_22, "oblimin"), "oblimin") +
 d_vt_ad_22_parallel <- fa.parallel(d_vt_ad_22)
 ```
 
-Parallel analysis suggests retaining `r d_vt_ad_22_parallel$nfact` factors: 
-
-```{r, fig.width = 4, fig.asp = 1}
-heatmap_fun(d_th_ch_22, 3, "oblimin") +
-  labs(title = "Factor loadings, parallel analysis: VT Adults",
-       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
-       x = "", y = "", fill = "")
-```
+Parallel analysis suggests retaining `r d_vt_ad_22_parallel$nfact` factors:  See 3-factor solution, above.
 
 ```{r, include = F}
 d_vt_ad_22_bic <- VSS(d_vt_ad_22, n = max_fact_fun(ncol(d_vt_ad_22)), rotate = "oblimin", plot = F)
 ```
 
-Minimizing BIC suggests retaining `r d_vt_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+Minimizing BIC suggests retaining `r d_vt_ad_22_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ch_22, 2, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
 
 ### Clustering within reduced factor space
 
@@ -1648,7 +1845,7 @@ fa(d_vt_ad_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -1744,7 +1941,7 @@ fa(d_vt_ch_22, 4, "oblimin")$scores[] %>%
   rownames_to_column("subid") %>%
   mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
   gather(factor, score, -subid) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
   filter(!is.na(character)) %>%
   mutate(character = gsub("crickets", "beetles", character),
          character = gsub("beetles", "beetles*", character)) %>%
@@ -2008,22 +2205,22 @@ d_all_22_subid <- d_us_ad_pilot_22 %>%
   column_to_rownames("subid")
 
 subids <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/analysis/_US pilot/beetles_pilot2_tidy.csv") %>% distinct(subid, character) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("ghana", "gh_ch", subid))) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("ghana", "gh_ch_fante", subid))) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("thailand", "th_ad", subid))) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("thailand", "th_ch", subid))) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("vanuatu", "vt_ad", subid))) %>%
-  full_join(read.csv("/Users/kweisman/Desktop/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% 
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% 
               distinct(subid, character) %>%
               mutate(subid = gsub("vanuatu", "vt_ch", subid)))
 ```
@@ -2079,10 +2276,1113 @@ fa(d_all_22_subid, 4, "oblimin")$scores[] %>%
        x = "", y = "Factor score")
 ```
 
-# Demographics
+# Excluding "add and subtract numbers" AND "pray"
+
+```{r, include = F, warning = FALSE}
+d_us_ad_pilot_21 <- d_us_ad_pilot_23 %>% 
+  select(-c(`add and subtract numbers`, `pray`))
+```
+
+```{r, include = F, warning = FALSE}
+## US adults: NOT YET RUN
+## US children: NOT YET RUN
+
+## GH adults
+d_gh_ad_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+## GH children
+d_gh_ch_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+d_gh_ch_fante_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
+  rename(subnum = subid) %>% 
+  filter(grepl("fante", tolower(language_home)) | 
+           grepl("fante", tolower(languages)) |
+           grepl("twi", tolower(language_home)) |
+           grepl("twi", tolower(languages))) %>%
+  clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+
+## CH adults: NOT YET RUN
+## CH children: NOT YET RUN
+
+## TH adults
+d_th_ad_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+## TH children
+d_th_ch_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+
+## VT adults
+d_vt_ad_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+## VT children
+d_vt_ch_21 <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, cap_exclude = c("add and subtract numbers", "pray"))
+```
+
+## US Adults: MTurk pilot
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_us_ad_pilot_21, max_fact_fun(ncol(d_us_ad_pilot_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: US Adults (MTurk Pilot)",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_us_ad_pilot_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: US Adults (MTurk Pilot)",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_us_ad_pilot_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: US Adults (MTurk Pilot)",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
 
 ```{r, include = F}
+d_us_ad_pilot_21_parallel <- fa.parallel(d_us_ad_pilot_21)
+```
+
+Parallel analysis suggests retaining `r d_us_ad_pilot_21_parallel$nfact` factors: See 3-factor solution, above.
+
+```{r, include = F}
+d_us_ad_pilot_21_bic <- VSS(d_us_ad_pilot_21, n = max_fact_fun(ncol(d_us_ad_pilot_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_us_ad_pilot_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_us_ad_pilot_21, reten_fact_fun(d_us_ad_pilot_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: US Adults (MTurk Pilot)",
+       subtitle = "Excluding 'add and subtract numbers', 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_us_ad_pilot_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/analysis/_US pilot/beetles_pilot2_tidy.csv") %>%
+              filter(scale == "beetles") %>%
+              distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: US Adults (MTurk Pilot)",
+       subtitle = "Excluding 'add and subtract numbers', 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## US Adults: not yet run
+
+## US Children: not yet run
+
+## GH Adults (Fante)
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_gh_ad_21, max_fact_fun(ncol(d_gh_ad_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_gh_ad_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ad_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_gh_ad_21_parallel <- fa.parallel(d_gh_ad_21)
+```
+
+Parallel analysis suggests retaining `r d_gh_ad_21_parallel$nfact` factors: See 2-factor solution, above.
+
+```{r, include = F}
+d_gh_ad_21_bic <- VSS(d_gh_ad_21, n = max_fact_fun(ncol(d_gh_ad_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: 
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ad_21, d_gh_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric(), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_gh_ad_21, reten_fact_fun(d_gh_ad_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_gh_ad_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("ghana", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_Adults_tidy_2018-08-12.csv") %>% distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: GH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## GH Children (English)
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_gh_ch_21, max_fact_fun(ncol(d_gh_ch_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_gh_ch_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_gh_ch_21_parallel <- fa.parallel(d_gh_ch_21)
+```
+
+Parallel analysis suggests retaining `r d_gh_ch_21_parallel$nfact` factors:
+
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ch_21, d_gh_ch_21_parallel$nfact, "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+
+```{r, include = F}
+d_gh_ch_21_bic <- VSS(d_gh_ch_21, n = max_fact_fun(ncol(d_gh_ch_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_gh_ch_21, reten_fact_fun(d_gh_ch_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_gh_ch_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("ghana", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## GH Children (Fante)
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_gh_ch_fante_21, max_fact_fun(ncol(d_gh_ch_fante_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_gh_ch_fante_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_gh_ch_fante_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_gh_ch_fante_21_parallel <- fa.parallel(d_gh_ch_fante_21)
+```
+
+Parallel analysis suggests retaining `r d_gh_ch_fante_21_parallel$nfact` factors: See 2-factor solution, above. 
+
+```{r, include = F}
+d_gh_ch_fante_21_bic <- VSS(d_gh_ch_fante_21, n = max_fact_fun(ncol(d_gh_ch_fante_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_gh_ch_fante_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+
+```{r, fig.width = 4, fig.asp = 1}
+# heatmap_fun(d_gh_ch_fante_21, 2, "oblimin") +
+#   labs(title = "Factor loadings, after retention: GH Children",
+#        subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+#        x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_gh_ch_fante_21, reten_fact_fun(d_gh_ch_fante_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_gh_ch_fante_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  # mutate(subid = paste("ghana", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  left_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% distinct(subid, character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: GH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## TH Adults
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_th_ad_21, max_fact_fun(ncol(d_th_ad_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_th_ad_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ad_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_th_ad_21_parallel <- fa.parallel(d_th_ad_21)
+```
+
+Parallel analysis suggests retaining `r d_th_ad_21_parallel$nfact` factors: See 3-factor solution, above.
+
+```{r, include = F}
+d_th_ad_21_bic <- VSS(d_th_ad_21, n = max_fact_fun(ncol(d_th_ad_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_th_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ad_21, 2, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_th_ad_21, reten_fact_fun(d_th_ad_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_th_ad_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("thailand", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  filter(!is.na(character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: TH Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## TH Children
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_th_ch_21, max_fact_fun(ncol(d_th_ch_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_th_ch_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_th_ch_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_th_ch_21_parallel <- fa.parallel(d_th_ch_21)
+```
+
+Parallel analysis suggests retaining `r d_th_ch_21_parallel$nfact` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ch_21, 3, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+
+```{r, include = F}
+d_th_ch_21_bic <- VSS(d_th_ch_21, n = max_fact_fun(ncol(d_th_ch_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_th_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 3-factor solution, above.
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_th_ch_21, reten_fact_fun(d_th_ch_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_th_ch_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("thailand", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  filter(!is.na(character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: TH Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## CH Adults: not yet run
+
+## CH Children: not yet run
+
+## VT Adults
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_vt_ad_21, max_fact_fun(ncol(d_vt_ad_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_vt_ad_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ad_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_vt_ad_21_parallel <- fa.parallel(d_vt_ad_21)
+```
+
+Parallel analysis suggests retaining `r d_vt_ad_21_parallel$nfact` factors: 
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_th_ch_21, 3, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+```{r, include = F}
+d_vt_ad_21_bic <- VSS(d_vt_ad_21, n = max_fact_fun(ncol(d_vt_ad_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_vt_ad_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors: See 2-factor solution, above.
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_vt_ad_21, reten_fact_fun(d_vt_ad_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_vt_ad_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  filter(!is.na(character)) %>%
+  mutate(character = gsub("crickets", "beetles", character),
+         character = gsub("beetles", "beetles*", character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles*", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: VT Adults",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+## VT Children
+
+### Maximal structure, oblimin rotation
+
+```{r, fig.width = 9, fig.asp = 0.4}
+heatmap_fun(d_vt_ch_21, max_fact_fun(ncol(d_vt_ch_21)), "oblimin") +
+  labs(title = "Factor loadings, maximal solution: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### 4 factors, oblimin rotation
+
+```{r, fig.width = 4, fig.asp = 0.67}
+heatmap_fun(d_vt_ch_21, 4, "oblimin") +
+  labs(title = "Factor loadings, 4-factor solution: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Reduced structure, oblimin rotation
+
+Following our usual protocol (eigenvalue > 1, shared variance explained > 5%, dominant for $\geq$ 1 capacity after rotation) suggests retaining `r reten_fact_fun(d_vt_ch_21, "oblimin")` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Alternative factor retention methods
+
+```{r, include = F}
+d_vt_ch_21_parallel <- fa.parallel(d_vt_ch_21)
+```
+
+Parallel analysis suggests retaining `r d_vt_ch_21_parallel$nfact` factors: See 3-factor solution, above.
+
+```{r, include = F}
+d_vt_ch_21_bic <- VSS(d_vt_ch_21, n = max_fact_fun(ncol(d_vt_ch_21)), rotate = "oblimin", plot = F)
+```
+
+Minimizing BIC suggests retaining `r d_vt_ch_21_bic$vss.stats %>% rownames_to_column("nfact") %>% filter(BIC == min(BIC)) %>% select(nfact) %>% as.numeric()` factors:
+
+```{r, fig.width = 4, fig.asp = 1}
+heatmap_fun(d_vt_ch_21, 2, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Clustering within reduced factor space
+
+```{r, fig.width = 4, fig.asp = 0.67}
+cluster_fun(d_vt_ch_21, reten_fact_fun(d_vt_ch_21, "oblimin"), rot = "oblimin") +
+  labs(title = "Hierarchical clustering within reduced factor space: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+### Attributions to characters
+
+```{r, fig.width = 3, fig.asp = 0.9}
+fa(d_vt_ch_21, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  mutate(subid = paste("vanuatu", subid, sep = "_")) %>%
+  gather(factor, score, -subid) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% distinct(subid, character)) %>%
+  filter(!is.na(character)) %>%
+  mutate(character = gsub("crickets", "beetles", character),
+         character = gsub("beetles", "beetles*", character)) %>%
+  group_by(character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles*", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God"))) %>%
+  ggplot(aes(x = character, y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_wrap(~ factor) +
+  geom_pointrange() +
+  scale_color_manual(guide = "none",
+                     values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: VT Children",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+## Congruence across sites and age groups
+
+```{r, fig.width = 5, fig.asp = 1}
+cong21 <- fa.congruence(list(
+  loadings_fun(d_us_ad_pilot_21, n_factors = 4, label = "us_ad"),
+  loadings_fun(d_gh_ch_21, n_factors = 4, label = "gh_ch"),
+  loadings_fun(d_th_ad_21, n_factors = 4, label = "th_ad"),
+  loadings_fun(d_th_ch_21, n_factors = 4, label = "th_ch"),
+  loadings_fun(d_vt_ad_21, n_factors = 4, label = "vt_ad"),
+  loadings_fun(d_vt_ch_21, n_factors = 4, label = "vt_ch"))) %>%
+  data.frame() %>%
+  rownames_to_column("factorA") %>%
+  gather(factorB, congruence, -factorA) %>%
+  mutate_at(vars(starts_with("factor")),
+            funs(factor(., levels = c("us_ad_MR1", "us_ad_MR2", 
+                                      "us_ad_MR3", "us_ad_MR4",
+                                      "gh_ch_MR1", "gh_ch_MR2",
+                                      "gh_ch_MR3", "gh_ch_MR4",
+                                      "th_ad_MR1", "th_ad_MR2",
+                                      "th_ad_MR3", "th_ad_MR4",
+                                      "th_ch_MR1", "th_ch_MR2",
+                                      "th_ch_MR3", "th_ch_MR4",
+                                      "vt_ad_MR1", "vt_ad_MR2",
+                                      "vt_ad_MR3", "vt_ad_MR4",
+                                      "vt_ch_MR1", "vt_ch_MR2",
+                                      "vt_ch_MR3", "vt_ch_MR4"))))
+
+ggplot(cong21, aes(x = factorA, y = factorB,
+           fill = congruence, label = round(congruence, 2))) +
+  geom_tile(color = "black") +
+  geom_text(size = 2) +
+  geom_hline(yintercept = 0.5, lty = 1, size = 0.5) +
+  geom_hline(yintercept = 4.5, lty = 1, size = 0.5) +
+  geom_hline(yintercept = 8.5, lty = 1, size = 0.5) +
+  geom_hline(yintercept = 12.5, lty = 2, size = 0.5) +
+  geom_hline(yintercept = 16.5, lty = 1, size = 0.5) +
+  geom_hline(yintercept = 20.5, lty = 2, size = 0.5) +
+  geom_hline(yintercept = 24.5, lty = 1, size = 0.5) +
+  geom_vline(xintercept = 0.5, lty = 1, size = 0.5) +
+  geom_vline(xintercept = 4.5, lty = 1, size = 0.5) +
+  geom_vline(xintercept = 8.5, lty = 1, size = 0.5) +
+  geom_vline(xintercept = 12.5, lty = 2, size = 0.5) +
+  geom_vline(xintercept = 16.5, lty = 1, size = 0.5) +
+  geom_vline(xintercept = 20.5, lty = 2, size = 0.5) +
+  geom_vline(xintercept = 24.5, lty = 1, size = 0.5) +
+  scale_fill_distiller(palette = "RdGy", limits = c(-1, 1),
+                       guide = guide_colorbar(barheight = 30)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(title = "Congruence between 4-factor solutions across samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+```{r, include = F}
+# label each factor by congruence with us adult factors
+cong21_label <- cong21 %>%
+  mutate(site = toupper(gsub("_.*$", "", factorA)),
+         age = case_when(grepl("_ad_", factorA) ~ "adults",
+                         grepl("_ch_", factorA) ~ "children")) %>%
+  filter(grepl("us_ad_", factorB), !grepl("MR4", factorB)) %>%
+  mutate(us_ad_factor = recode_factor(factorB,
+                                      "us_ad_MR1" = "BODY",
+                                      "us_ad_MR2" = "HEART",
+                                      "us_ad_MR3" = "MIND"),
+         us_ad_factor_lab = paste(factorA,
+                                  us_ad_factor, 
+                                  format(round(congruence, 2), digits = 2), 
+                                  sep = "_")) %>%
+  group_by(site, age, factorA) %>%
+  top_n(1, abs(congruence)) %>%
+  ungroup()
+```
+
+
+```{r, fig.width = 4, fig.asp = 0.67, include = F}
+loadings_21 <- data.frame(
+    loadings_fun(d_us_ad_pilot_21, n_factors = 4, label = "us_ad"),
+  loadings_fun(d_gh_ch_21, n_factors = 4, label = "gh_ch"),
+  # loadings_fun(d_gh_ch_fante_21, n_factors = 4, label = "gh_ch"),
+  loadings_fun(d_th_ad_21, n_factors = 4, label = "th_ad"),
+  loadings_fun(d_th_ch_21, n_factors = 4, label = "th_ch"),
+  loadings_fun(d_vt_ad_21, n_factors = 4, label = "vt_ad"),
+  loadings_fun(d_vt_ch_21, n_factors = 4, label = "vt_ch")) %>%
+  rownames_to_column("capacity") %>%
+  gather(factorA, loading, -capacity) %>%
+  full_join(cong21_label %>% select(factorA, us_ad_factor_lab)) %>%
+  # rename("us_ad_BODY" = us_ad_MR1, "us_ad_HEART" = us_ad_MR2,
+  #        "us_ad_MIND" = us_ad_MR3, "us_ad_anger" = us_ad_MR4,
+  #        "gh_ch_BODYHEART" = gh_ch_MR1, "gh_ch_MINDHEART" = gh_ch_MR2,
+  #        "gh_ch_prayer" = gh_ch_MR3, "gh_ch_shyness" = gh_ch_MR4,
+  #        "th_ad_HEART" = th_ad_MR1, "th_ad_BODY" = th_ad_MR2,
+  #        "th_ad_MIND" = th_ad_MR3, "th_ad_choice" = th_ad_MR4,
+  #        "th_ch_BODY" = th_ch_MR1, "th_ch_MIND" = th_ch_MR2,
+  #        "th_ch_HEART1" = th_ch_MR3, "th_ch_HEART2" = th_ch_MR4,
+  #        "vt_ad_MIND" = vt_ad_MR1, "vt_ad_BODY" = vt_ad_MR2,
+  #        "vt_ad_HEART2" = vt_ad_MR3, "vt_ad_HEART1" = vt_ad_MR4,
+  #        "vt_ch_BODY" = vt_ch_MR1, "vt_ch_MIND" = vt_ch_MR2,
+  #        "vt_ch_HEART" = vt_ch_MR3, "vt_ch_none" = vt_ch_MR4) %>%
+  data.frame() %>%
+  select(capacity, us_ad_factor_lab, loading) %>%
+  spread(us_ad_factor_lab, loading) %>%
+  column_to_rownames("capacity")
+
+# do cluster analysis on factor loadings
+loadings_21 %>%
+  t() %>%
+  dist() %>%
+  hclust() %>%
+  as.dendrogram() %>%
+  set("labels_col", value = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"), 
+      k = 4) %>% 
+  # set("labels_col", value = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+  #                             "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", 
+  #                             "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"),
+  #     k = 4) %>%
+  set("branches_lwd", 0.5) %>%
+  as.ggdend() %>%
+  ggplot(horiz = F) +
+  # geom_hline(yintercept = 2, lty = 2, color = "black") +
+  coord_cartesian(ylim = c(-4, 3)) +
+  labs(title = "Hierarchical clustering of factors: All samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+
+# do factor analysis on factor loadings
+heatmap_fun(loadings_21, reten_fact_fun(loadings_21, "oblimin"), "oblimin")
+# fa.parallel(loadings_21)
+heatmap_fun(loadings_21, 4, "oblimin")
+
+# do cluster analysis on factor loadings after factor analysis
+fa(loadings_21, reten_fact_fun(loadings_21, "oblimin"), "oblimin")$loadings[] %>%
+  data.frame() %>%
+  dist() %>%
+  hclust() %>%
+  as.dendrogram() %>%
+  set("labels_col", value = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                              "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", 
+                              "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"),
+      k = 4) %>%
+  set("branches_lwd", 0.5) %>%
+  as.ggdend() %>%
+  ggplot(horiz = F) +
+  # geom_hline(yintercept = 2, lty = 2, color = "black") +
+  coord_cartesian(ylim = c(-3, 2)) +
+  labs(title = "Hierarchical clustering of factors: All samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation")
+```
+
+```{r, include = F}
+prop_var_fun <- function(df, n_factors, rot){
+  vacc <- fa(df, n_factors, rot)$Vaccounted %>%
+    data.frame() %>%
+    rownames_to_column("stat") %>%
+    filter(stat == "Proportion Explained") %>%
+    gather(factor, prop_var, -stat)
+  
+  return(vacc)
+}
+
+d_varexp_21 <- bind_rows(
+  prop_var_fun(d_us_ad_pilot_21, 4, "oblimin") %>%
+    mutate(site = "US", age = "adults"),
+  prop_var_fun(d_gh_ch_21, 4, "oblimin") %>%
+    mutate(site = "GH", age = "children"),
+  prop_var_fun(d_th_ad_21, 4, "oblimin") %>%
+    mutate(site = "TH", age = "adults"),
+  prop_var_fun(d_th_ch_21, 4, "oblimin") %>%
+    mutate(site = "TH", age = "children"),
+  prop_var_fun(d_vt_ad_21, 4, "oblimin") %>%
+    mutate(site = "VT", age = "adults"),
+  prop_var_fun(d_vt_ch_21, 4, "oblimin") %>%
+    mutate(site = "VT", age = "children")) %>%
+  select(-stat) %>%
+  mutate(factor = paste(tolower(site), substr(age, 1, 2), factor, sep = "_"),
+         prop_var_round = format(round(prop_var, 2), digits = 2))
+```
+
+
+## Master EFA
+
+```{r, fig.width = 4, fig.asp = 1}
+d_all_21 <- d_us_ad_pilot_21 %>%
+  bind_rows(d_gh_ch_21) %>%
+  bind_rows(d_gh_ch_fante_21) %>%
+  bind_rows(d_th_ad_21) %>%
+  bind_rows(d_th_ch_21) %>%
+  bind_rows(d_vt_ad_21) %>%
+  bind_rows(d_vt_ch_21)
+
+heatmap_fun(d_all_21, reten_fact_fun(d_all_21, "oblimin"), "oblimin") +
+  labs(title = "Factor loadings, after retention: All samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+
+# fa.parallel(d_all_21)
+
+heatmap_fun(d_all_21, 4, "oblimin") +
+  labs(title = "Factor loadings, parallel analysis: All samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+
+# VSS(d_all_21)
+
+heatmap_fun(d_all_21, 3, "oblimin") +
+  labs(title = "Factor loadings, minimizing BIC: All samples",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "", fill = "")
+```
+
+### Attributions to characters
+
+```{r}
+d_all_21_subid <- d_us_ad_pilot_21 %>%
+  rownames_to_column("subid") %>%
+  bind_rows(d_gh_ch_21 %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("gh_ch", subid, sep = "_"))) %>%
+  bind_rows(d_gh_ch_fante_21 %>%
+              rownames_to_column("subid") %>%
+              select(-subid) %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("gh_ch_fante", subid, sep = "_"))) %>%
+  bind_rows(d_th_ad_21 %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("th_ad", subid, sep = "_"))) %>%
+  bind_rows(d_th_ch_21 %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("th_ch", subid, sep = "_"))) %>%
+  bind_rows(d_vt_ad_21 %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("vt_ad", subid, sep = "_"))) %>%
+  bind_rows(d_vt_ch_21 %>%
+              rownames_to_column("subid") %>%
+              mutate(subid = paste("vt_ch", subid, sep = "_"))) %>%
+  column_to_rownames("subid")
+
+subids <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/analysis/_US pilot/beetles_pilot2_tidy.csv") %>% distinct(subid, character) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_children_tidy_2018-05-09.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("ghana", "gh_ch", subid))) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("ghana", "gh_ch_fante", subid))) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("thailand", "th_ad", subid))) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("thailand", "th_ch", subid))) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("vanuatu", "vt_ad", subid))) %>%
+  full_join(read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% 
+              distinct(subid, character) %>%
+              mutate(subid = gsub("vanuatu", "vt_ch", subid)))
+```
+
+```{r, fig.width = 6, fig.asp = 0.7}
+fa(d_all_21_subid, 4, "oblimin")$scores[] %>%
+  data.frame() %>%
+  rownames_to_column("subid") %>%
+  gather(factor, score, -subid) %>%
+  full_join(subids) %>%
+  filter(!is.na(character)) %>%
+  mutate(character = gsub("crickets", "beetles", character),
+         character = gsub("beetles", "beetles*", character),
+         site = toupper(substr(subid, 1, 2)),
+         site = ifelse(site == "R_", "US", site),
+         age = case_when(grepl("_ad_", subid) ~ "adults",
+                         grepl("R_", subid) ~ "adults",
+                         grepl("_ch_", subid) ~ "children"),
+         language = case_when(site == "US" ~ "English",
+                              site == "TH" ~ "Thai",
+                              site == "CH" ~ "Chinese",
+                              site == "VT" ~ "Bislama",
+                              site == "GH" & age == "adults" ~ "Fante",
+                              site == "GH" & grepl("fante", subid) ~ "Fante",
+                              site == "GH" & !grepl("fante", subid) ~ "English")) %>%
+  filter(!is.na(factor)) %>%
+  group_by(site, age, language, character, factor) %>%
+  do(data.frame(rbind(smean.cl.boot(.$score)))) %>%
+  ungroup() %>%
+  mutate(character = factor(character, 
+                            levels = c("cell phones", "rocks", "flowers", 
+                                       "beetles*", "chickens", "mice", "dogs", 
+                                       "children", "pigs", "ghosts", "God")),
+         site = factor(site, levels = c("US", "TH", "VT", "GH")),
+         age = factor(age, levels = c("adults", "children")),
+         langauge = factor(language, levels = c("English", "Fante", "Thai", 
+                                                "Chinese", "Bislama"))) %>%
+  ggplot(aes(x = character, 
+             y = Mean, ymin = Lower, ymax = Upper, 
+             color = character)) +
+  facet_grid(factor ~ interaction(age, langauge, site)) +
+  # geom_hline(yintercept = 0, lty = 3) +
+  geom_pointrange() +
+  scale_color_manual(values = c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+                                "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+                                "#b15928", "#cab2d6", "#6a3d9a")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        legend.position = "right",
+        panel.border = element_rect(fill = NA, color = "black")) +
+  labs(title = "Factor scores, 4-factor solution: All samples to date",
+       subtitle = "Excluding 'add and subtract numbers' and 'pray'; after oblimin rotation",
+       x = "", y = "Factor score")
+```
+
+
+# Demographics
+
+```{r, include = T}
 paste0("US adults (pilot): ", d_us_ad_pilot_23 %>% nrow())
+paste0("GH adults: ", d_gh_ad_23 %>% nrow())
 paste0("GH children: ", d_gh_ch_23 %>% nrow())
 paste0("GH children (Fante): ", d_gh_ch_fante_23 %>% nrow())
 paste0("TH adults: ", d_th_ad_23 %>% nrow())

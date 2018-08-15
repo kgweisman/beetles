@@ -85,9 +85,9 @@ d_us_ad_pilot <- d_us_ad_pilot_raw %>%
 ## US children: NOT YET RUN
 
 ## GH adults: NOT YET RUN
+d_gh_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ad")
 ## GH children
 d_gh_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_tidy_2017-07-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
-
 d_gh_ch_fante <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
   rename(subnum = subid) %>% 
   filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
@@ -108,7 +108,8 @@ d_vt_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_c
 ```
 
 ```{r}
-d_all <- d_us_ad_pilot %>% rownames_to_column("subid") %>%
+d_all <- # d_us_ad_pilot %>% rownames_to_column("subid") %>%
+  d_gh_ad %>% rownames_to_column("subid") %>%
   full_join(d_gh_ch %>% rownames_to_column("subid")) %>%
   full_join(d_th_ad %>% rownames_to_column("subid")) %>%
   full_join(d_th_ch %>% rownames_to_column("subid")) %>%
@@ -155,7 +156,7 @@ scoresplot_fun(efa_all_par, target = c("ghosts", "God", "children")) +
 ```
 
 ```{r, fig.width = 5, fig.asp = 1}
-itemsplot_fun(efa_all_par, target = c("ghosts", "God", "children")) + 
+itemsplot_fun(efa_all_par, target = c("ghosts", "God", "children")) +
   labs(title = "Parallel Analysis")
 ```
 
@@ -176,32 +177,33 @@ efa_all_bic <- fa(d_all, nfactors = reten_all_bic, rotate = "oblimin",
                   scores = "tenBerge", impute = "median")
 ```
 
-```{r, fig.width = 4}
-heatmap_fun(efa_all_bic, factor_names = c("BODILY", "COGNITIVE", "SOCIAL-EMOTIONAL")) + 
+```{r, fig.width = 4.5}
+heatmap_fun(efa_all_bic, 
+            factor_names = c("COGNITIVE", "BODILY", "SOCIAL-EMOTIONAL", "other")) + 
   # labs(title = "Minimizing BIC")
-  # labs(x = "Figure 1: Shared conceptual structure") +
+  labs(x = "Figure 1: Shared conceptual structure") +
   theme(axis.title.x = element_text(hjust = 0)) +
   guides(fill = guide_colorbar("factor loading", barheight = 15))
 ```
 
 ### Which capacities are attributed to which targets?
 
-```{r, fig.width = 4, fig.asp = 0.8}
+```{r, fig.width = 5, fig.asp = 1}
 scoresplot_fun(efa_all_bic, target = "all", highlight = "supernatural",
-               factor_names = c("BODILY", "COGNITIVE", "SOCIAL-EMOTIONAL")) + 
+            factor_names = c("COGNITIVE", "BODILY", "SOCIAL-EMOTIONAL", "other")) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1,
                                    color = c(rep("black", 8),
                                              rep("#984ea3", 2)),
                                    face = c(rep("plain", 8),
                                             rep("bold", 2)))) +
-  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) #+
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8", "gray")) +
   # labs(title = "Minimizing BIC")
-  # labs(title = "Figure 2: Factor scores")
+  labs(title = "Figure 2: Factor scores")
 ```
 
 ```{r, fig.width = 3.5, fig.asp = 1}
 scoresplot_fun(efa_all_bic, target = c("ghosts", "God", "children")) + 
-  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  # scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
   labs(title = "Minimizing BIC")
 ```
 
@@ -250,6 +252,45 @@ itemsplot_fun(efa_all_k, target = c("ghosts", "God", "children")) +
 ```
 
 
+## 3 factors
+
+### What are these factors?
+
+```{r}
+efa_all_3 <- fa(d_all, nfactors = 3, rotate = "oblimin",
+                scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 4, fig.asp = 0.6}
+heatmap_fun(efa_all_3, 
+            factor_names = c("COGNITIVE", "BODILY", "SOCIAL-EMOTIONAL")) + 
+  labs(x = "Shared concpetual structure") +
+  theme(axis.title.x = element_text(hjust = 0))
+  # labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.67}
+scoresplot_fun(efa_all_3, target = "all", highlight = "supernatural",
+               factor_names = c("COGNITIVE", "BODILY", "SOCIAL-EMOTIONAL")) +
+  scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1,
+                                   color = c(rep("black", 8),
+                                             rep("#984ea3", 2)),
+                                   face = c(rep("plain", 8),
+                                            rep("bold", 2))))
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_all_3, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_3, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
 
 
 # Comparing conceptual structures
@@ -258,6 +299,7 @@ We'll extract 4 factors from all samples, to keep things simple.
 
 ```{r}
 efa_us_ad_4 <- fa(d_us_ad_pilot, nfactors = 4, rotate = "oblimin")
+efa_gh_ad_4 <- fa(d_gh_ad, nfactors = 4, rotate = "oblimin")
 efa_gh_ch_4 <- fa(d_gh_ch, nfactors = 4, rotate = "oblimin")
 efa_th_ad_4 <- fa(d_th_ad, nfactors = 4, rotate = "oblimin")
 efa_th_ch_4 <- fa(d_th_ch, nfactors = 4, rotate = "oblimin")
@@ -269,6 +311,11 @@ efa_vt_ch_4 <- fa(d_vt_ch, nfactors = 4, rotate = "oblimin")
 plot_us_ad_4 <- heatmap_fun(efa_us_ad_4) + 
   guides(fill = "none") + 
   labs(x = "US: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ad_4 <- heatmap_fun(efa_gh_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: adults") +
   theme(axis.title.x = element_text(hjust = 0))
 
 plot_gh_ch_4 <- heatmap_fun(efa_gh_ch_4) + 
@@ -298,8 +345,25 @@ plot_vt_ch_4 <- heatmap_fun(efa_vt_ch_4) +
 ```
 
 ```{r, fig.asp = 1.5}
-plot_grid(plot_us_ad_4, plot_gh_ch_4, plot_th_ad_4, 
+plot_grid(#plot_us_ad_4, 
+          plot_gh_ad_4, plot_gh_ch_4, plot_th_ad_4, 
           plot_th_ch_4, plot_vt_ad_4, plot_vt_ch_4, 
-          ncol = 2, labels = c("A", "B", "C", "D", "E", "F"))
+          ncol = 2, labels = c("A", "B", "C", "D", "E", "F", "G"))
+```
+
+# Counts
+
+```{r}
+paste("US adults:", nrow(d_us_ad_pilot))
+paste("GH adults:", nrow(d_gh_ad))
+paste("GH children:", nrow(d_gh_ch))
+paste("TH adults:", nrow(d_th_ad))
+paste("TH children:", nrow(d_th_ch))
+paste("VT adults:", nrow(d_vt_ad))
+paste("VT children:", nrow(d_vt_ch))
+
+paste("Non-US:", sum(nrow(d_gh_ad), nrow(d_gh_ch),
+                     nrow(d_th_ad), nrow(d_th_ch),
+                     nrow(d_vt_ad), nrow(d_vt_ch)))
 ```
 

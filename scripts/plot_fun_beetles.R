@@ -14,7 +14,7 @@ heatmap_fun <- function(efa, factor_names = NA){
     data.frame() %>%
     rownames_to_column("capacity") %>%
     gather(factor, loading, -capacity) %>%
-    mutate(factor = as.character(factor(factor, labels = factor_names)))
+    mutate(factor = factor(factor, labels = factor_names))
   
   # get fa.sort() order
   order <- loadings %>%
@@ -26,20 +26,36 @@ heatmap_fun <- function(efa, factor_names = NA){
     select(capacity, order)
 
   # get percent shared variance explained
+  # shared_var <- efa$Vaccounted %>%
+  #   data.frame() %>%
+  #   rownames_to_column("stat") %>%
+  #   filter(stat == "Proportion Explained") %>%
+  #   select(-stat) %>%
+  #   gather(factor_raw, var) %>%
+  #   mutate(factor = factor(factor_raw, labels = factor_names)) %>%
+  #   mutate(var = factor(factor_raw,
+  #                       labels = paste0(as.character(factor), "\n(", 
+  #                                       round(var, 2)*100, "% shared var.)"))) %>%
+  #   arrange(factor_raw)
+  
+  # get percent shared variance explained
   shared_var <- efa$Vaccounted %>%
     data.frame() %>%
     rownames_to_column("stat") %>%
     filter(stat == "Proportion Explained") %>%
     select(-stat) %>%
-    gather(factor, var) %>%
-    mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
-    mutate(var = paste0(factor, "\n(", round(var, 2)*100, "% shared var.)"))
+    gather(factor_raw, var) %>%
+    mutate(factor = factor(factor_raw, labels = factor_names)) %>%
+    mutate(var = paste0(as.character(factor), "\n", 
+                        round(var, 2)*100, "% shared var."))
   
   # make plot
   plot <- ggplot(loadings %>% 
                    left_join(order) %>%
                    left_join(shared_var) %>%
-                   mutate(capacity = gsub("_", " ", capacity)),
+                   mutate(capacity = gsub("_", " ", capacity),
+                          var = factor(var,
+                                       levels = as.character(shared_var$var))),
                  aes(x = var, 
                      y = reorder(capacity, order), 
                      fill = loading, 
@@ -114,7 +130,7 @@ scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
            highlight = factor(ifelse(target %in% highlight_list,
                                      "highlight", "no_highlight"),
                               levels = c("no_highlight", "highlight")),
-           factor = as.character(factor(factor, labels = factor_names)))
+           factor = factor(factor, labels = factor_names))
   
   # get bootstrapped means
   df_boot <- df %>%
@@ -143,7 +159,7 @@ scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
     data.frame() %>%
     rownames_to_column("capacity") %>%
     gather(factor, loading, -capacity) %>%
-    mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
+    mutate(factor = factor(factor, labels = factor_names)) %>%
     group_by(factor) %>%
     top_n(3, abs(loading)) %>%
     mutate(capacity = gsub("_", " ", capacity),
@@ -152,7 +168,7 @@ scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
     ungroup() %>%
     select(-capacity, -loading) %>%
     distinct() %>%
-    mutate(funs(as.character))
+    mutate(factor = as.character(factor))
   
   # get percent shared variance explained
   shared_var <- efa$Vaccounted %>%
@@ -160,9 +176,9 @@ scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
     rownames_to_column("stat") %>%
     filter(stat == "Proportion Explained") %>%
     select(-stat) %>%
-    gather(factor, var) %>%
-    mutate(factor = as.character(factor(factor, labels = factor_names)),
-           var = paste0(round(var, 2)*100, "% shared variance"))
+    gather(factor_raw, var) %>%
+    mutate(factor = factor(factor_raw, labels = factor_names)) %>%
+    mutate(var = paste0(round(var, 2)*100, "% shared var."))
   
   subtitle <- c()
   for(i in 1:nrow(first_items)){
@@ -175,7 +191,10 @@ scoresplot_fun <- function(efa, target, highlight = "none", factor_names = NA){
   subtitle <- gsub("\\n$", "", subtitle)
   
   # make plot
-  plot <- ggplot(df, aes(x = target, y = score, fill = factor)) +
+  plot <- ggplot(df %>%
+                   mutate(factor = factor(factor, 
+                                          levels = as.character(shared_var$factor))), 
+                 aes(x = target, y = score, fill = factor)) +
     facet_grid(rows = vars(factor), cols = vars(site, age)) +
     geom_hline(yintercept = 0, lty = 2, color = "darkgray") +
     geom_point(alpha = 0.25, color = "NA", shape = 21,
@@ -219,11 +238,6 @@ itemsplot_fun <- function(efa, target, factor_names = NA){
     target_list <- target
   }
   
-  # get factor names
-  if(is.na(factor_names)){
-    factor_names <- paste("Factor", 1:efa$factors)
-  }
-
   # make usable dataframe
   df <- d_all %>%
     rownames_to_column("subid") %>%
@@ -271,6 +285,11 @@ itemsplot_fun <- function(efa, target, factor_names = NA){
   # add order to df
   df <- df %>% left_join(order)
   
+  # get factor names
+  if(is.na(factor_names)){
+    factor_names <- paste("Factor", 1:length(levels(factor(order$factor))))
+  }
+
   # get bootstrapped means
   df_boot <- df %>%
     group_by(site, age, target, factor, capacity, order) %>%
