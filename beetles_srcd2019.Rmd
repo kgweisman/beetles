@@ -138,26 +138,145 @@ efa_all_par <- fa(d_all, nfactors = reten_all_par, rotate = "oblimin",
                   scores = "tenBerge", impute = "median")
 ```
 
-```{r, fig.width = 3, fig.asp = 2}
-heatmap_fun(efa_all_par) + 
-  labs(title = "Parallel Analysis")
+```{r, fig.width = 4.2, fig.asp = 0.7}
+heatmap_fun(efa_all_par, 
+            factor_names = c("COGNITIVE", "BODILY", 
+                             "SOCIAL-EMOTIONAL", "[other]")) + 
+  labs(title = "Factor loadings (data pooled across all samples)")
 ```
 
 ### Which capacities are attributed to which targets?
 
-```{r, fig.width = 6, fig.asp = 0.8}
-scoresplot_fun(efa_all_par, target = "all") + 
-  labs(title = "Parallel Analysis")
+#### Factor scores
+
+```{r, fig.width = 5, fig.asp = 0.8}
+scoresplot_fun(efa_all_par, target = "all",
+               factor_names = c("COGNITIVE", "BODILY", 
+                                "SOCIAL-EMOTIONAL", "[other]")) + 
+  labs(title = "Factor scores (by sample, factor, and target entity)",
+       subtitle = "All targets")
 ```
 
-```{r, fig.width = 3, fig.asp = 1.5}
-scoresplot_fun(efa_all_par, target = c("ghosts", "God", "children")) + 
-  labs(title = "Parallel Analysis")
+```{r, fig.width = 3.5, fig.asp = 0.8}
+scoresplot_fun(efa_all_par, target = c("ghosts", "God", "children"),
+               factor_names = c("COGNITIVE", "BODILY",
+                                "SOC.-EMO.", "[other]")) + 
+  labs(title = "Factor scores (by sample, factor, and target entity)",
+       subtitle = "Human and 'supernatural' targets only")
 ```
 
 ```{r, fig.width = 5, fig.asp = 1}
 itemsplot_fun(efa_all_par, target = c("ghosts", "God", "children")) +
   labs(title = "Parallel Analysis")
+```
+
+#### Summary scores
+
+```{r}
+factors_par <- efa_all_par$loadings[] %>%
+  data.frame() %>%
+  rownames_to_column("capacity") %>%
+  gather(factor, loading, -capacity) %>%
+  group_by(capacity) %>%
+  top_n(1, loading) %>%
+  ungroup() %>%
+  arrange(factor, desc(loading)) %>%
+  mutate(order = 1:nrow(.))
+
+factors_par_howmany <- factors_par %>%
+  count(factor)
+
+factors_par_culled <- factors_par %>%
+  group_by(factor) %>%
+  top_n(min(factors_par_howmany$n), loading) %>%
+  ungroup() %>%
+  arrange(factor, desc(loading)) %>%
+  mutate(order = 1:nrow(.))
+
+scores_par_prelim <- d_all %>%
+  rownames_to_column("site_age_subid_target_entity") %>%
+  gather(capacity, response, -site_age_subid_target_entity) %>%
+  mutate(site = gsub("_.*$", "", site_age_subid_target_entity),
+         age = gsub("_.*$", "", gsub("^.._", "", site_age_subid_target_entity)),
+         subid = gsub("_target.*$", "", site_age_subid_target_entity),
+         target = gsub("^.*target_", "", site_age_subid_target_entity)) %>%
+  mutate(target = case_when(target == "pigs" ~ NA_character_,
+                            target == "NA" ~ NA_character_,
+                            target == "crickets" ~ "beetles",
+                            TRUE ~ target)) %>%
+  mutate(site = factor(site, levels = c("us", "gh", "th", "ch", "vt"),
+                       labels = c("US", "Ghana", "Thailand", "China", "Vanuatu")),
+         age = factor(age, levels = c("ad", "ch"),
+                      labels = c("adults", "children")),
+         target = factor(target,
+                         levels = c("rocks", "flowers", "cell phones", 
+                                    "beetles", "chickens", "mice", 
+                                    "dogs", "children", 
+                                    "ghosts", "God"))) %>%
+  select(-site_age_subid_target_entity) %>%
+  full_join(factors_par_culled) %>%
+  # full_join(factors_par) %>%
+  mutate(factor = factor(factor, levels = c("MR2", "MR1", "MR3", "MR4"),
+                         labels = c("BODILY", "COGNITIVE", 
+                                    "SOCIAL-EMOTIONAL", "[other]"))) %>%
+  filter(!is.na(target), !is.na(factor)) %>%
+  distinct()
+
+scores_par <- scores_par_prelim %>%
+  group_by(site, age, subid, target, factor) %>%
+  summarise(score = mean(response, na.rm = T)) %>%
+  ungroup()
+
+scores_par_mb <- scores_par %>% 
+  group_by(site, age, target, factor) %>%
+  multi_boot_standard(col = "score", na.rm = T) %>%
+  ungroup()
+```
+
+```{r}
+# calculate reliability
+scores_par_prelim_wide <- scores_par_prelim %>%
+  full_join(factors_par_culled) %>%
+  filter(!is.na(factor), !is.na(subid)) %>% 
+  arrange(factor, desc(loading)) %>%
+  select(subid, capacity, response) %>%
+  spread(capacity, response) %>%
+  select(subid, factors_par_culled$capacity) %>%
+  column_to_rownames("subid")
+
+# BODILY
+alpha(scores_par_prelim_wide[5:8])$total
+
+# "COGNITIVE"
+alpha(scores_par_prelim_wide[1:4])$total
+
+# "SOCIAL-EMOTIONAL"
+alpha(scores_par_prelim_wide[9:12])$total
+```
+
+
+```{r, fig.width = 5, fig.asp = 0.8}
+ggplot(scores_par, aes(x = target, y = score, color = factor)) +
+  facet_grid(cols = vars(site, age), rows = vars(factor)) +
+  geom_jitter(height = 0.02, width = 0.2, alpha = 0.2, show.legend = F) +
+  geom_pointrange(data = scores_par_mb,
+                  aes(y = mean, ymin = ci_lower, ymax = ci_upper),
+                  fatten = 2, color = "black") +
+  scale_color_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+```{r, fig.width = 3.5, fig.asp = 0.8}
+ggplot(scores_par %>% filter(target %in% c("children", "ghosts", "God")), 
+       aes(x = target, y = score, color = factor)) +
+  facet_grid(cols = vars(site, age), rows = vars(factor)) +
+  geom_jitter(height = 0.02, width = 0.2, alpha = 0.25, show.legend = F) +
+  geom_pointrange(data = scores_par_mb %>%
+                    filter(target %in% c("children", "ghosts", "God")),
+                  aes(y = mean, ymin = ci_lower, ymax = ci_upper),
+                  fatten = 2, color = "black") +
+  scale_color_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 ```
 
 
