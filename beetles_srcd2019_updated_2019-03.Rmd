@@ -1,0 +1,522 @@
+---
+title: "SRCD 2019 Symposium: Religious & metaphysical concepts (Srinivasan)"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+---
+
+```{r global_options, include = F}
+knitr::opts_chunk$set(fig.width = 3, fig.asp = 0.67)
+```
+
+```{r}
+# load required libraries
+library(tidyverse)
+library(langcog) # source: https://github.com/langcog/langcog-package
+library(psych)
+library(lme4)
+library(cowplot)
+
+# set theme for ggplots
+theme_set(theme_bw())
+```
+
+```{r, include = F}
+source("./scripts/max_factors_efa.R")
+source("./scripts/plot_fun_beetles.R")
+source("./scripts/reten_fun.R")
+source("./scripts/clean_fun.R")
+```
+
+# Data preparation
+
+```{r, include = F}
+question_key <- read.csv("/Users/kweisman/Documents/Research (Stanford)/Projects/Templeton Grant/DEVELOPMENTAL TASKS/beetles:dimkid:factors/design/beetles cb.csv")
+```
+
+```{r, include = F, warning = FALSE}
+## US adults
+d_us_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_US/beetles_us_adults_tidy_2019-02-21.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "us", age = "ad")
+## US children
+d_us_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_US/beetles_us_children_tidy_2019-03-19.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "us", age = "ch")
+
+## GH adults
+d_gh_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_adults_tidy_2018-08-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ad")
+## GH children
+d_gh_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA/beetles_ghana_tidy_2017-07-12.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
+d_gh_ch_fante <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_GHANA_2018/beetles_ghana_fante_children_tidy_2018-07-19.csv")[-1] %>% 
+  rename(subnum = subid) %>% 
+  filter(grepl("fante", tolower(language_home)) | grepl("twi", tolower(language_home))) %>%
+  clean_fun(key = question_key, ex_addsub = T, site = "gh", age = "ch")
+
+## CH adults: NOT YET RUN
+## CH children: NOT YET RUN
+
+## TH adults
+d_th_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ad")
+## TH children
+d_th_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_THAILAND/beetles_thailand_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "th", age = "ch")
+
+## VT adults
+d_vt_ad <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_adults_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ad")
+## VT children
+d_vt_ch <- read.csv("/Users/kweisman/Desktop/TEMP/TEMP_VANUATU/beetles_vanuatu_children_tidy_2018-05-09.csv") %>% clean_fun(key = question_key, ex_addsub = T, site = "vt", age = "ch")
+```
+
+```{r}
+d_all <- bind_rows(d_us_ad %>% rownames_to_column("subid"), 
+                   d_us_ch %>% rownames_to_column("subid"),
+                   d_gh_ad %>% rownames_to_column("subid"), 
+                   d_gh_ch_fante %>% rownames_to_column("subid"),
+                   d_th_ad %>% rownames_to_column("subid"), 
+                   d_th_ch %>% rownames_to_column("subid"),
+                   d_vt_ad %>% rownames_to_column("subid"), 
+                   d_vt_ch %>% rownames_to_column("subid")) %>%
+  column_to_rownames("subid")
+```
+
+# Shared conceptual structure
+
+Pooling all participants from all sites together into a common factor structure.
+
+## Parallel analysis
+
+### How many factors to retain?
+
+```{r}
+reten_all_PA <- fa.parallel(d_all, plot = F); reten_all_PA
+reten_all_par <- reten_all_PA$nfact
+```
+
+### What are these factors?
+
+```{r}
+efa_all_par <- fa(d_all, nfactors = reten_all_par, rotate = "varimax",
+                  scores = "tenBerge", impute = "median")
+
+efa_all_par_factornames <- c("[other]", "BODILY", 
+                             "SOCIAL-EMOTIONAL", "COGNITIVE")
+efa_all_par_factornames_short <- c("[other]", "BOD.", 
+                                   "SOC.-EMO.", "COG.")
+```
+
+```{r, fig.width = 4.2, fig.asp = 0.7}
+heatmap_fun(efa_all_par, factor_names = efa_all_par_factornames) +
+  labs(title = "Factor loadings (data pooled across all samples)")
+```
+
+### Which capacities are attributed to which targets?
+
+#### Factor scores
+
+```{r, fig.width = 5, fig.asp = 0.8}
+scoresplot_fun(efa_all_par, target = "all",
+               factor_names = efa_all_par_factornames) + 
+  labs(title = "Factor scores (by sample, factor, and target entity)",
+       subtitle = "All targets")
+```
+
+```{r, fig.width = 3.5, fig.asp = 0.8}
+scoresplot_fun(efa_all_par, target = c("ghosts", "God", "children"),
+               factor_names = efa_all_par_factornames_short) + 
+  labs(title = "Factor scores (by sample, factor, and target entity)",
+       subtitle = "Human and 'supernatural' targets only")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_par, target = c("ghosts", "God", "children")) +
+  labs(title = "Parallel Analysis")
+```
+
+#### Summary scores
+
+```{r}
+factors_par <- efa_all_par$loadings[] %>%
+  data.frame() %>%
+  rownames_to_column("capacity") %>%
+  gather(factor, loading, -capacity) %>%
+  group_by(capacity) %>%
+  top_n(1, loading) %>%
+  ungroup() %>%
+  arrange(factor, desc(loading)) %>%
+  mutate(order = 1:nrow(.),
+         factor = factor(factor,
+                         levels = paste0("MR", 1:efa_all_par$factors),
+                         labels = efa_all_par_factornames),
+         factor = factor(as.character(factor)))
+
+# factors_par_howmany <- factors_par %>%
+#   count(factor)
+# factors_par_howmany <- min(factors_par_howmany$n)
+
+factors_par_howmany <- 6
+
+factors_par_culled <- factors_par %>%
+  group_by(factor) %>%
+  top_n(factors_par_howmany, loading) %>%
+  ungroup() %>%
+  arrange(factor, desc(loading)) %>%
+  mutate(order = 1:nrow(.))
+
+scores_par_prelim <- d_all %>%
+  rownames_to_column("site_age_subid_target_entity") %>%
+  gather(capacity, response, -site_age_subid_target_entity) %>%
+  mutate(site = gsub("_.*$", "", site_age_subid_target_entity),
+         age = gsub("_.*$", "", gsub("^.._", "", site_age_subid_target_entity)),
+         subid = gsub("_target.*$", "", site_age_subid_target_entity),
+         target = gsub("^.*target_", "", site_age_subid_target_entity)) %>%
+  mutate(target = case_when(target == "pigs" ~ NA_character_,
+                            target == "NA" ~ NA_character_,
+                            target == "crickets" ~ "beetles",
+                            TRUE ~ target)) %>%
+  mutate(site = factor(site, levels = c("us", "gh", "th", "ch", "vt"),
+                       labels = c("US", "Ghana", "Thailand", 
+                                  "China", "Vanuatu")),
+         age = factor(age, levels = c("ad", "ch"),
+                      labels = c("adults", "children")),
+         target = factor(target,
+                         levels = c("rocks", "flowers", "cell phones", 
+                                    "beetles", "chickens", "mice", 
+                                    "dogs", "children", "ghosts", "God"))) %>%
+  select(-site_age_subid_target_entity) %>%
+  full_join(factors_par_culled) %>%
+  # full_join(factors_par) %>%
+  filter(!is.na(target), !is.na(factor)) %>%
+  distinct()
+
+scores_par <- scores_par_prelim %>%
+  group_by(site, age, subid, target, factor) %>%
+  summarise(score = mean(response, na.rm = T)) %>%
+  ungroup()
+
+scores_par_mb <- scores_par %>% 
+  group_by(site, age, target, factor) %>%
+  multi_boot_standard(col = "score", na.rm = T) %>%
+  ungroup()
+```
+
+```{r}
+# calculate reliability
+scores_par_prelim_wide <- scores_par_prelim %>%
+  full_join(factors_par_culled) %>%
+  filter(!is.na(factor), !is.na(subid)) %>% 
+  arrange(factor, desc(loading)) %>%
+  select(subid, capacity, response) %>%
+  spread(capacity, response) %>%
+  select(subid, factors_par_culled$capacity) %>%
+  column_to_rownames("subid")
+
+# BODILY
+paste(names(scores_par_prelim_wide[1:6]), collapse = ", ")
+alpha(scores_par_prelim_wide[1:6])$total
+
+# "COGNITIVE"
+paste(names(scores_par_prelim_wide[7:12]), collapse = ", ")
+alpha(scores_par_prelim_wide[7:12])$total
+
+# "SOCIAL-EMOTIONAL"
+paste(names(scores_par_prelim_wide[13:18]), collapse = ", ")
+alpha(scores_par_prelim_wide[13:18])$total
+```
+
+
+```{r, fig.width = 7, fig.asp = 0.6}
+ggplot(scores_par, aes(x = target, y = score, color = factor)) +
+  facet_grid(cols = vars(site, age), rows = vars(factor)) +
+  geom_jitter(height = 0.02, width = 0.2, alpha = 0.2, show.legend = F) +
+  geom_pointrange(data = scores_par_mb,
+                  aes(y = mean, ymin = ci_lower, ymax = ci_upper),
+                  fatten = 2, color = "black") +
+  scale_color_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+```{r, fig.width = 3.5, fig.asp = 0.6}
+ggplot(scores_par %>%
+         mutate(factor_short = recode_factor(
+           factor,
+           "BODILY" = "BOD.",
+           "COGNITIVE" = "COG.",
+           "SOCIAL-EMOTIONAL" = "SOC.-EMO.")) %>%
+         filter(target %in% c("children", "ghosts", "God")), 
+       aes(x = target, y = score, color = factor_short)) +
+  facet_grid(cols = vars(site, age), rows = vars(factor_short)) +
+  geom_jitter(height = 0.02, width = 0.2, alpha = 0.25, show.legend = F) +
+  geom_pointrange(data = scores_par_mb %>%
+                    mutate(factor_short = recode_factor(
+                      factor,
+                      "BODILY" = "BOD.",
+                      "COGNITIVE" = "COG.",
+                      "SOCIAL-EMOTIONAL" = "SOC.-EMO.")) %>%
+                    filter(target %in% c("children", "ghosts", "God")),
+                  aes(y = mean, ymin = ci_lower, ymax = ci_upper),
+                  fatten = 2, color = "black") +
+  scale_color_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+
+## Minimizing BIC
+
+### How many factors to retain?
+
+```{r}
+reten_all_BIC <- VSS(d_all, plot = F); reten_all_BIC
+reten_all_bic <- data.frame(reten_all_BIC$vss.stats %>% rownames_to_column("nfact") %>% top_n(-1, BIC))$nfact %>% as.numeric()
+```
+
+## Preset criteria
+
+### How many factors to retain?
+
+```{r}
+reten_all_k <- reten_fun(d_all, rot_type = "varimax"); reten_all_k
+```
+
+### What are these factors?
+
+```{r}
+efa_all_k <- fa(d_all, nfactors = reten_all_k, rotate = "varimax",
+                scores = "tenBerge", impute = "median")
+```
+
+```{r, fig.width = 3, fig.asp = 2}
+heatmap_fun(efa_all_k) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.8}
+scoresplot_fun(efa_all_k, target = "all") + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_all_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_k, target = c("ghosts", "God", "children")) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+
+## 3 factors
+
+### What are these factors?
+
+```{r}
+efa_all_3 <- fa(d_all, nfactors = 3, rotate = "varimax",
+                scores = "tenBerge", impute = "median")
+efa_all_3_factornames <- c("BODILY", "COGNITIVE", "SOCIAL-EMOTIONAL")
+efa_all_3_factornames_short <- c("BOD.", "COG.", "SOC.-EMO.")
+```
+
+```{r, fig.width = 4, fig.asp = 0.6}
+heatmap_fun(efa_all_3, factor_names = efa_all_3_factornames) + 
+  labs(x = "Shared concpetual structure") +
+  theme(axis.title.x = element_text(hjust = 0))
+# labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+### Which capacities are attributed to which targets?
+
+```{r, fig.width = 6, fig.asp = 0.67}
+scoresplot_fun(efa_all_3, target = "all", highlight = "supernatural",
+               factor_names = efa_all_3_factornames) +
+  # scale_fill_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1,
+                                   color = c(rep("black", 8),
+                                             rep("#984ea3", 2)),
+                                   face = c(rep("plain", 8),
+                                            rep("bold", 2))))
+```
+
+```{r, fig.width = 3, fig.asp = 1.5}
+scoresplot_fun(efa_all_3, target = c("ghosts", "God", "children"), 
+               factor_names = efa_all_3_factornames_short) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+itemsplot_fun(efa_all_3, target = c("ghosts", "God", "children"),
+              factor_names = efa_all_3_factornames) + 
+  labs(title = "Preset criteria (Weisman et al., 2017)")
+```
+
+
+# Comparing conceptual structures
+
+## 4 factors
+
+We'll extract 4 factors from all samples, to keep things simple.
+
+```{r}
+efa_us_ad_4 <- fa(d_us_ad, nfactors = 4, rotate = "varimax")
+efa_us_ch_4 <- fa(d_us_ch, nfactors = 4, rotate = "varimax")
+efa_gh_ad_4 <- fa(d_gh_ad, nfactors = 4, rotate = "varimax")
+efa_gh_ch_4 <- fa(d_gh_ch_fante, nfactors = 4, rotate = "varimax")
+efa_th_ad_4 <- fa(d_th_ad, nfactors = 4, rotate = "varimax")
+efa_th_ch_4 <- fa(d_th_ch, nfactors = 4, rotate = "varimax")
+efa_vt_ad_4 <- fa(d_vt_ad, nfactors = 4, rotate = "varimax")
+efa_vt_ch_4 <- fa(d_vt_ch, nfactors = 4, rotate = "varimax")
+```
+
+```{r}
+plot_us_ad_4 <- heatmap_fun(efa_us_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "US: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_us_ch_4 <- heatmap_fun(efa_us_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "US: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ad_4 <- heatmap_fun(efa_gh_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ch_4 <- heatmap_fun(efa_gh_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ad_4 <- heatmap_fun(efa_th_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ch_4 <- heatmap_fun(efa_th_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ad_4 <- heatmap_fun(efa_vt_ad_4) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ch_4 <- heatmap_fun(efa_vt_ch_4) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+```
+
+```{r, fig.asp = 1.5}
+plot_grid(plot_us_ad_4, plot_us_ch_4, 
+          plot_gh_ad_4, plot_gh_ch_4, 
+          plot_th_ad_4, plot_th_ch_4, 
+          plot_vt_ad_4, plot_vt_ch_4, 
+          ncol = 2, labels = "AUTO")
+```
+
+## 3 factors
+
+We'll extract 3 factors from all samples, to keep things simple.
+
+```{r}
+efa_us_ad_3 <- fa(d_us_ad, nfactors = 3, rotate = "varimax")
+efa_us_ch_3 <- fa(d_us_ch, nfactors = 3, rotate = "varimax")
+efa_gh_ad_3 <- fa(d_gh_ad, nfactors = 3, rotate = "varimax")
+efa_gh_ch_3 <- fa(d_gh_ch_fante, nfactors = 3, rotate = "varimax")
+efa_th_ad_3 <- fa(d_th_ad, nfactors = 3, rotate = "varimax")
+efa_th_ch_3 <- fa(d_th_ch, nfactors = 3, rotate = "varimax")
+efa_vt_ad_3 <- fa(d_vt_ad, nfactors = 3, rotate = "varimax")
+efa_vt_ch_3 <- fa(d_vt_ch, nfactors = 3, rotate = "varimax")
+```
+
+```{r}
+plot_us_ad_3 <- heatmap_fun(efa_us_ad_3) + 
+  guides(fill = "none") + 
+  labs(x = "US: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_us_ch_3 <- heatmap_fun(efa_us_ch_3) + 
+  guides(fill = "none") + 
+  labs(x = "US: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ad_3 <- heatmap_fun(efa_gh_ad_3) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_gh_ch_3 <- heatmap_fun(efa_gh_ch_3) + 
+  guides(fill = "none") + 
+  labs(x = "Ghana: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ad_3 <- heatmap_fun(efa_th_ad_3) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_th_ch_3 <- heatmap_fun(efa_th_ch_3) + 
+  guides(fill = "none") + 
+  labs(x = "Thailand: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ad_3 <- heatmap_fun(efa_vt_ad_3) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: adults") +
+  theme(axis.title.x = element_text(hjust = 0))
+
+plot_vt_ch_3 <- heatmap_fun(efa_vt_ch_3) + 
+  guides(fill = "none") + 
+  labs(x = "Vanuatu: children") +
+  theme(axis.title.x = element_text(hjust = 0))
+```
+
+```{r, fig.asp = 1.5}
+plot_grid(plot_us_ad_3, plot_us_ch_3, 
+          plot_gh_ad_3, plot_gh_ch_3, 
+          plot_th_ad_3, plot_th_ch_3, 
+          plot_vt_ad_3, plot_vt_ch_3, 
+          ncol = 2, labels = "AUTO")
+```
+
+# Counts
+
+```{r}
+paste("US adults:", nrow(d_us_ad))
+paste("US children:", nrow(d_us_ch))
+paste("GH adults:", nrow(d_gh_ad))
+paste("GH children:", nrow(d_gh_ch))
+paste("TH adults:", nrow(d_th_ad))
+paste("TH children:", nrow(d_th_ch))
+paste("VT adults:", nrow(d_vt_ad))
+paste("VT children:", nrow(d_vt_ch))
+
+paste("Non-US:", sum(nrow(d_gh_ad), nrow(d_gh_ch),
+                     nrow(d_th_ad), nrow(d_th_ch),
+                     nrow(d_vt_ad), nrow(d_vt_ch)))
+
+paste0("Adults: n = ", min(nrow(d_us_ad), nrow(d_gh_ad), nrow(d_th_ad), nrow(d_vt_ad)), "-", max(nrow(d_us_ad), nrow(d_gh_ad), nrow(d_th_ad), nrow(d_vt_ad)), "; total N = ",  sum(nrow(d_us_ad), nrow(d_gh_ad), nrow(d_th_ad), nrow(d_vt_ad)))
+
+paste0("Children: n = ", min(nrow(d_us_ch), nrow(d_gh_ch), nrow(d_th_ch), nrow(d_vt_ch)), "-", max(nrow(d_us_ch), nrow(d_gh_ch), nrow(d_th_ch), nrow(d_vt_ch)), "; total N = ",  sum(nrow(d_us_ch), nrow(d_gh_ch), nrow(d_th_ch), nrow(d_vt_ch)))
+```
+
+```{r}
+d_all %>%
+  rownames_to_column("site_age_subid_target_character") %>%
+  mutate(site_age_subid_target_character = gsub("cell phones", "cellphones", site_age_subid_target_character)) %>%
+  separate(site_age_subid_target_character, into = c("site", "age", "subid", "target", "character")) %>%
+  count(site, age, character) %>%
+  spread(character, n)
+```
+
+```{r}
+d_all %>%
+  rownames_to_column("site_age_subid_target_character") %>%
+  mutate(site_age_subid_target_character = gsub("cell phones", "cellphones", site_age_subid_target_character)) %>%
+  separate(site_age_subid_target_character, into = c("site", "age", "subid", "target", "character")) %>%
+  filter(is.na(character) | character == "NA")
+```
+
+
+

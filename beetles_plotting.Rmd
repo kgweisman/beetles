@@ -1,0 +1,265 @@
+---
+title: "Beetles visualization"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(psych)
+library(ggrepel)
+library(cowplot)
+```
+
+First, get data from `beetles_analysis.Rmd`.
+
+# EFAs
+
+```{r}
+efa_us_ad_pilot_23 <- fa(d_us_ad_pilot_23, 
+                         nfactors = d_us_ad_pilot_23_parallel$nfact, 
+                         rotate = "varimax", scores = "tenBerge")
+
+efa_gh_ad_23 <- fa(d_gh_ad_23, 
+                   nfactors = d_gh_ad_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+
+efa_gh_ch_fante_23 <- fa(d_gh_ch_fante_23, 
+                         nfactors = d_gh_ch_fante_23_parallel$nfact,
+                         rotate = "varimax", scores = "tenBerge")
+
+efa_gh_ch_23 <- fa(d_gh_ch_23,
+                   nfactors = d_gh_ch_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+
+efa_th_ad_23 <- fa(d_th_ad_23, 
+                   nfactors = d_th_ad_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+
+efa_th_ch_23 <- fa(d_th_ch_23, 
+                   nfactors = d_th_ch_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+
+efa_vt_ad_23 <- fa(d_vt_ad_23, 
+                   nfactors = d_vt_ad_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+
+efa_vt_ch_23 <- fa(d_vt_ch_23, 
+                   nfactors = d_vt_ch_23_parallel$nfact,
+                   rotate = "varimax", scores = "tenBerge")
+```
+
+# Plots
+
+```{r}
+scatter_fun <- function(efa, ref = efa_us_ad_pilot_23){
+  loadings <- efa$loadings[] %>%
+    data.frame() %>%
+    rownames_to_column("capacity") %>%
+    arrange(capacity) %>%
+    column_to_rownames("capacity")
+  
+  ref_loadings <- ref$loadings[] %>%
+    data.frame() %>%
+    rownames_to_column("capacity") %>%
+    arrange(capacity) %>%
+    column_to_rownames("capacity")
+  
+  colors <- fa.congruence(loadings, ref_loadings, digits = 10) %>%
+    data.frame() %>%
+    rownames_to_column("factor") %>%
+    gather(ref, congruence, -factor) %>%
+    group_by(factor) %>%
+    top_n(1, congruence) %>%
+    ungroup() %>%
+    mutate(color = recode(ref,
+                          "MR1" = "#e41a1c",
+                          "MR2" = "#377eb8",
+                          "MR3" = "#4daf4a",
+                          .default = "black"),
+           shape = recode(ref,
+                          "MR1" = 15,
+                          "MR2" = 16,
+                          "MR3" = 17)) %>%
+    arrange(factor)
+  
+  efa$loadings[] %>%
+    data.frame() %>%
+    rownames_to_column("capacity") %>%
+    full_join(efa$loadings[] %>%
+                data.frame() %>%
+                rownames_to_column("capacity") %>%
+                gather(factor, loading, -capacity) %>%
+                group_by(capacity) %>%
+                top_n(1, loading) %>%
+                ungroup() %>%
+                select(capacity, factor)) %>%
+    full_join(colors) %>%
+    mutate(factor = gsub("MR", "Factor ", factor)) %>%
+    ggplot(aes(x = MR1, y = MR2, color = factor, shape = factor)) +
+    geom_point(size = 2) +
+    geom_text_repel(aes(label = capacity), size = 3, 
+                    show.legend = F, box.padding = 0.4) +
+    scale_x_continuous(breaks = seq(-1, 1, 0.25),
+                       expand = expand_scale(mult = c(.1, .1))) +
+    scale_y_continuous(breaks = seq(-1, 1, 0.25), 
+                       expand = expand_scale(mult = c(.1, .1))) +
+    scale_color_manual(values = colors$color) +
+    scale_shape_manual(values = colors$shape) +
+    theme_bw() +
+    labs(x = "Factor 1 loading", y = "Factor 2 loading", 
+         color = "Factor", shape = "Factor")
+}
+```
+
+
+```{r, fig.width = 3, fig.asp = .8}
+plot_us_ad_pilot_23 <- scatter_fun(efa_us_ad_pilot_23) +
+  # scale_color_manual(values = c("#e41a1c", "#377eb8", "#4daf4a")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "US adults")
+# plot_us_ad_pilot_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_gh_ad_23 <- scatter_fun(efa_gh_ad_23) +
+  # scale_color_manual(values = c("#377eb8", "#e41a1c", "black")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Ghanaian adults")
+# plot_gh_ad_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_gh_ch_fante_23 <- scatter_fun(efa_gh_ch_fante_23) +
+  # scale_color_manual(values = c("#e41a1c", "#4daf4a")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Ghanaian children (Fante)")
+# plot_gh_ch_fante_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_gh_ch_23 <- scatter_fun(efa_gh_ch_23) +
+  # scale_color_manual(values = c("#e41a1c", "#4daf4a")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Ghanaian children (English)")
+# plot_gh_ch_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_th_ad_23 <- scatter_fun(efa_th_ad_23) +
+  # scale_color_manual(values = c("#377eb8", "#4daf4a", "#e41a1c")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Thai adults")
+# plot_th_ad_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_th_ch_23 <- scatter_fun(efa_th_ch_23) +
+  # scale_color_manual(values = c("#e41a1c", "#4daf4a", "#377eb8", "#984ea3")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Thai children")
+# plot_th_ch_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_vt_ad_23 <- scatter_fun(efa_vt_ad_23) +
+  # scale_color_manual(values = c("#4daf4a", "#e41a1c")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Ni-Vanuatu adults")
+# plot_vt_ad_23
+```
+
+```{r, fig.width = 3, fig.asp = 0.8}
+plot_vt_ch_23 <- scatter_fun(efa_vt_ch_23) +
+  # scale_color_manual(values = c("#e41a1c", "#4daf4a", "#377eb8")) +
+  guides(color = "none", shape = "none") +
+  labs(title = "Ni-Vanuatu children")
+# plot_vt_ch_23
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+plots <- plot_grid(plot_us_ad_pilot_23, plot_th_ad_23, 
+                   plot_gh_ad_23, plot_vt_ad_23,
+                   ncol = 2,
+                   labels = c("A", "B", "C", "D"))
+
+title <- ggdraw() + 
+  draw_label("Conceptual structure across cultural contexts", 
+             fontface = "bold", size = 20)
+
+subtitle <- ggdraw() + 
+  draw_label("Mental capacities are plotted in the first two dimensions of the factor space,\nas determined by separate exploratory factor analyses for each sample.\n\nColor indicates high correspondence (cosine similarity) with the\nBODY (red), HEART (blue), or MIND (green) factors of US adults.\n")
+
+# plot_grid(title, subtitle, plots, ncol = 1, rel_heights = c(1, 5, 25))
+plot_grid(title, plots, ncol = 1, rel_heights = c(1, 20))
+```
+
+# Alternative plot strategy
+
+```{r}
+loadings_fun <- function(efa, country, age_group, language){
+  efa$loadings[] %>%
+    data.frame() %>%
+    rownames_to_column("capacity") %>%
+    mutate(country = country, age_group = age_group, language = language) %>%
+    gather(factor, loading, -c(capacity, country, age_group, language)) %>%
+    mutate(spec_factor = paste(country, age_group, language, factor, sep = "_")) %>%
+    select(-factor)
+}
+```
+
+
+```{r}
+all_loadings <- full_join(loadings_fun(efa_us_ad_pilot_23, "US", "adults", "English"),
+                          loadings_fun(efa_th_ad_23, "TH", "adults", "Thai")) %>%
+  full_join(loadings_fun(efa_gh_ad_23, "GH", "adults", "Fante")) %>%
+  full_join(loadings_fun(efa_vt_ad_23, "VT", "adults", "Bislama"))
+
+loadings_df <- all_loadings %>%
+  mutate(ord_factor = gsub("^.*MR", "MR", spec_factor)) %>%
+  filter(ord_factor %in% c("MR1", "MR2")) %>%
+  select(-spec_factor) %>%
+  spread(ord_factor, loading)
+
+loadings_key <- all_loadings %>%
+  group_by(country, age_group, language, capacity) %>%
+  top_n(1, loading) %>%
+  ungroup()
+```
+
+```{r, fig.width = 5, fig.asp = 1}
+ggplot(loadings_df %>% 
+         left_join(loadings_key) %>%
+         mutate(country = factor(country, levels = c("US", "TH", "GH", "VT")),
+                spec_factor = factor(spec_factor,
+                                     levels = c("US_adults_English_MR1",
+                                                "US_adults_English_MR2",
+                                                "US_adults_English_MR3",
+                                                "TH_adults_Thai_MR1",
+                                                "TH_adults_Thai_MR2",
+                                                "TH_adults_Thai_MR3",
+                                                "GH_adults_Fante_MR1",
+                                                "GH_adults_Fante_MR2",
+                                                "GH_adults_Fante_MR3",
+                                                "VT_adults_Bislama_MR1",
+                                                "VT_adults_Bislama_MR2"))), 
+       aes(x = MR1, y = MR2, color = spec_factor, shape = spec_factor)) +
+  facet_wrap(~ interaction(country, age_group, sep = " ")) +
+  geom_point(size = 3) +
+  geom_text_repel(aes(label = capacity), box.padding = 0.5, 
+                  show.legend = F, size = 3) +
+  scale_color_manual(values = c("#ba3103", "#1b70d1", "#168421",
+                                "#ba3103", "#1b70d1", "#168421", 
+                                "#1b70d1", "#ba3103", "black",
+                                "#1b70d1", "#ba3103")) +
+  # scale_color_manual(values = c("#332288", "#6699CC", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#661100", "#CC6677", "#AA4466", "#882255", "#AA4499")) +
+  # scale_color_brewer(palette = "Dark2") +
+  scale_shape_manual(values = c(15, 16, 17,
+                                15, 16, 17,
+                                16, 15, 18,
+                                16, 15)) +
+  theme_bw() +
+  labs(x = "Loading on first factor (by sample)",
+       y = "Loading on second factor (by sample)") +
+  theme(legend.position = "none")
+```
+

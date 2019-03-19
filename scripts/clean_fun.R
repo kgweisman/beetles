@@ -21,7 +21,7 @@ clean_fun <- function(df, key,
     select(-subnum) %>%
     remove_rownames() %>%
     mutate(subid = paste(site, age, 
-                         10001:(10000+length(levels(factor(df$subnum)))),
+                         10001:(10000+nrow(.)),
                          "target", character,
                          sep = "_")) %>%
     column_to_rownames("subid") %>%
